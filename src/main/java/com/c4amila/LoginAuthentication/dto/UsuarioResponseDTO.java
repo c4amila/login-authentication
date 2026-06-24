@@ -5,14 +5,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class UsuarioCadastroResponseDTO {
+public class UsuarioResponseDTO {
     private Long id;
     private String nomeCompleto;
-    private String dataNascimento;
+    private LocalDate dataNascimento;
     private String email;
     private String telefone;
 }
