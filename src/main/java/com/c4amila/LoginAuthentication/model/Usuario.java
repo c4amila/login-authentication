@@ -39,7 +39,7 @@ public class Usuario {
 
     @NotBlank(message = "A senha é obrigatória")
     @Column(name = "senha", length = 100)
-    @Pattern(regexp = "^(=+.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%&*+=])(?=\\S+$).{8,}$",
+    @Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%&*+=])(?=\\S+$).{8,}$",
     message = "A senha deve conter pelo menos uma letra maiúscula, uma letra minúscula, um caractere especial (!@#$%&*+=) e no mínimo 8 carateres")
     private String senha;
 
@@ -50,5 +50,5 @@ public class Usuario {
     private LocalDateTime horarioBloqueio;
 
     @Column(name = "esta_bloqueado", nullable = false)
-    private Boolean estaBloqueado;
+    private Boolean estaBloqueado = false;
 }
