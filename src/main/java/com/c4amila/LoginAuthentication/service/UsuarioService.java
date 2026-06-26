@@ -5,6 +5,8 @@ import com.c4amila.LoginAuthentication.dto.UsuarioResponseDTO;
 import com.c4amila.LoginAuthentication.dto.UsuarioLoginRequestDTO;
 import com.c4amila.LoginAuthentication.model.Usuario;
 import com.c4amila.LoginAuthentication.repository.UsuarioRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -14,9 +16,11 @@ import java.time.temporal.ChronoUnit;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UsuarioService(UsuarioRepository usuarioRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public UsuarioResponseDTO cadastrar(UsuarioCadastroRequestDTO dto){
@@ -30,7 +34,7 @@ public class UsuarioService {
         novoUsuario.setDataNascimento(dto.getDataNascimento());
         novoUsuario.setEmail(dto.getEmail());
         novoUsuario.setTelefone(dto.getTelefone());
-        novoUsuario.setSenha(dto.getSenha()); //depois o Spring Security será adicionado
+        novoUsuario.setSenha(passwordEncoder.encode(dto.getSenha())); //agora com encoder
 
         //inicializa os campos de controle de senha
         novoUsuario.setTentativaSenha(0);
@@ -69,8 +73,7 @@ public class UsuarioService {
             }
         }
 
-        //validação simples
-        boolean senhaCorreta = dto.getSenha().equals(usuario.getSenha());
+        boolean senhaCorreta = passwordEncoder.matches(dto.getSenha(), usuario.getSenha());
         if (senhaCorreta){
             usuario.setTentativaSenha(0);
             usuarioRepository.save(usuario);
