@@ -1,26 +1,26 @@
 package com.c4amila.LoginAuthentication.service;
 
-import com.c4amila.LoginAuthentication.dto.UsuarioCadastroRequestDTO;
-import com.c4amila.LoginAuthentication.dto.UsuarioResponseDTO;
-import com.c4amila.LoginAuthentication.dto.UsuarioLoginRequestDTO;
+import com.c4amila.LoginAuthentication.dto.*;
 import com.c4amila.LoginAuthentication.model.Usuario;
 import com.c4amila.LoginAuthentication.repository.UsuarioRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Random;
 
 @Service
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
+    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     public UsuarioResponseDTO cadastrar(UsuarioCadastroRequestDTO dto){
@@ -103,6 +103,48 @@ public class UsuarioService {
             int tentativasRestantes = 5 - incrementaTentativa;
             throw new RuntimeException("E-mail ou senha inválidos. Você tem mais " + tentativasRestantes + " tentativa(s)");
         }
+    }
+
+    public void solicitarRecuperacaoSenha(RecuperacaoSolicitacaoDTO dto){
+        Usuario usuario = usuarioRepository.findByEmail(dto.getEmail()).orElseThrow(
+                () -> new RuntimeException("E-mail não encontrado"));
+
+        String codigo = String.format("%06d", new Random().nextInt(999999)); //gera codigo aleatorio
+
+        //salva o codigo e o horario atual da geracao
+        usuario.setCodigoRecuperacao(codigo);
+        usuario.setHorarioGeracaoCodigo(LocalDateTime.now());
+        usuarioRepository.save(usuario); //salva tudo
+
+        emailService.enviarEmailRecuperacao(usuario.getEmail(), usuario.getNomeCompleto(), codigo);
+    }
+
+    public void validarRecuperacao(RecuperacaoConfirmacaoDTO dto){
+        if (!dto.getNovaSenha().equals(dto.getConfirmarNovaSenha())){
+            throw new RuntimeException("As senhas não coincidem");
+        }
+
+        Usuario usuario = usuarioRepository.findByEmail(dto.getEmail()).orElseThrow(
+                () -> new RuntimeException("E-mail não encontrado no sistema")
+        );
+
+        //compara o codigo enviado com o do banco
+        if (usuario.getCodigoRecuperacao() == null || !usuario.getCodigoRecuperacao().equals(dto.getCodigo())){
+            throw new RuntimeException("Código de verificação inválido");
+        }
+
+        //verifica tempo de expiração (5 min)
+        if (usuario.getHorarioGeracaoCodigo().isBefore(LocalDateTime.now().minusMinutes(5))){
+            throw new RuntimeException("O códigou expirou. Solicite novamente um novo código.");
+        }
+
+        //atualização da senha
+        usuario.setSenha(passwordEncoder.encode(dto.getNovaSenha()));
+        usuario.setCodigoRecuperacao(null);
+        usuario.setHorarioGeracaoCodigo(null);
+        usuario.setTentativaSenha(0); //se a conta estava bloqueada, aproveita para resetar as tentativas
+
+        usuarioRepository.save(usuario);
     }
 
 }

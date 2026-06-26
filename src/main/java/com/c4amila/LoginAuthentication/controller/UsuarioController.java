@@ -1,8 +1,6 @@
 package com.c4amila.LoginAuthentication.controller;
 
-import com.c4amila.LoginAuthentication.dto.UsuarioCadastroRequestDTO;
-import com.c4amila.LoginAuthentication.dto.UsuarioLoginRequestDTO;
-import com.c4amila.LoginAuthentication.dto.UsuarioResponseDTO;
+import com.c4amila.LoginAuthentication.dto.*;
 import com.c4amila.LoginAuthentication.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,5 +30,17 @@ public class UsuarioController {
         UsuarioResponseDTO responseDTO = usuarioService.autenticar(requestDTO);
 
         return ResponseEntity.ok(responseDTO);
+    }
+
+    @PostMapping("/recuperar-senha")
+    public ResponseEntity<String> soliticarRecuperacao(@Valid @RequestBody RecuperacaoSolicitacaoDTO dto){
+        usuarioService.solicitarRecuperacaoSenha(dto);
+        return ResponseEntity.ok("Um código de verificação foi encaminhado para o seu e-mail");
+    }
+
+    @PostMapping("/confirmar-senha")
+    public ResponseEntity<String> confirmarRecuperacao(@Valid @RequestBody RecuperacaoConfirmacaoDTO dto){
+        usuarioService.validarRecuperacao(dto);
+        return ResponseEntity.ok("Senha atualizada com sucesso!");
     }
 }

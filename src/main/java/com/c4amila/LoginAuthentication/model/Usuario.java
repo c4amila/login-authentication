@@ -51,4 +51,10 @@ public class Usuario {
 
     @Column(name = "esta_bloqueado", nullable = false)
     private Boolean estaBloqueado = false;
+
+    @Column(name = "codigo_recuperacao")
+    private String codigoRecuperacao;
+
+    @Column(name = "horario_geracao_codigo")
+    private LocalDateTime horarioGeracaoCodigo;
 }
