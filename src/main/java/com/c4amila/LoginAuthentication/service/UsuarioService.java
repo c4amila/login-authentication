@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Random;
+import java.security.SecureRandom;
 
 @Service
 public class UsuarioService {
@@ -16,6 +16,7 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private static final SecureRandom secureRandom = new SecureRandom();
 
     public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
         this.usuarioRepository = usuarioRepository;
@@ -107,9 +108,10 @@ public class UsuarioService {
 
     public void solicitarRecuperacaoSenha(RecuperacaoSolicitacaoDTO dto){
         Usuario usuario = usuarioRepository.findByEmail(dto.getEmail()).orElseThrow(
-                () -> new RuntimeException("E-mail não encontrado"));
+                () -> new RuntimeException("Foi enviado um código de recuperação. Verifique seu e-mail"));
 
-        String codigo = String.format("%06d", new Random().nextInt(999999)); //gera codigo aleatorio
+        int geracaoNum = secureRandom.nextInt(1_000_000);
+        String codigo = String.format("%06d", geracaoNum); //gera codigo aleatorio
 
         //salva o codigo e o horario atual da geracao
         usuario.setCodigoRecuperacao(codigo);
