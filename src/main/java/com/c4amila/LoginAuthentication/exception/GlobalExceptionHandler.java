@@ -49,7 +49,7 @@ public class GlobalExceptionHandler {
         ErroResponseDTO erro = new ErroResponseDTO(LocalDateTime.now(),
                 HttpStatus.UNPROCESSABLE_CONTENT.value(),
                 "Campos inválidos ou ausentes",
-                erros.toString());
+                erros);
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(erro);
     }
 

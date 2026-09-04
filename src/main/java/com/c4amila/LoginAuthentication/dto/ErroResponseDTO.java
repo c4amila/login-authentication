@@ -14,5 +14,5 @@ public class ErroResponseDTO {
     private LocalDateTime timestamp;
     private Integer status;
     private String erro;
-    private String mensagem;
+    private Object mensagem;
 }
