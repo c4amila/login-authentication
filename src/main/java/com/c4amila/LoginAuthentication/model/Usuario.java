@@ -25,6 +25,7 @@ public class Usuario {
 
     @Past(message = "A data de nascimento deve ser uma data no passado")
     @Column(name = "data_nascimento")
+    @NotNull
     private LocalDate dataNascimento;
 
     @NotBlank(message = "O telefone é obrigatório")

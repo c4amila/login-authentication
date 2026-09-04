@@ -153,11 +153,6 @@ public class UsuarioService {
             throw new RequisicaoInvalidaException("O código expirou. Solicite um novo código");
         }
 
-        //verifica tempo de expiração (5 min)
-        if (usuario.getHorarioGeracaoCodigo().isBefore(LocalDateTime.now().minusMinutes(5))){
-            throw new RequisicaoInvalidaException("O códigou expirou. Solicite novamente um novo código.");
-        }
-
         //compara o codigo enviado com o do banco
         if (usuario.getCodigoRecuperacao() == null || !usuario.getCodigoRecuperacao().equals(dto.getCodigo())){
             int tentativas = usuario.getTentativaSenha() + 1;
