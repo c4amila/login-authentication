@@ -58,19 +58,24 @@ public class UsuarioService {
                 .orElseThrow(() -> new RuntimeException("E-mail ou senha inválido"));
 
         if (usuario.getEstaBloqueado()){
-            LocalDateTime now = LocalDateTime.now();
-            LocalDateTime horarioDesbloqueio = usuario.getHorarioBloqueio().plusMinutes(5); //add os 5 min
+            if (usuario.getHorarioBloqueio() != null){
+                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime horarioDesbloqueio = usuario.getHorarioBloqueio().plusMinutes(5); //add os 5 min
 
-            if (now.isAfter(horarioDesbloqueio)){
+                if (now.isAfter(horarioDesbloqueio)){
+                    usuario.setEstaBloqueado(false);
+                    usuario.setTentativaSenha(0);
+                    usuario.setHorarioBloqueio(null);
+
+                    usuarioRepository.save(usuario);
+                }else{
+                    long minRestantes = ChronoUnit.MINUTES.between(now, horarioDesbloqueio);
+                    throw new RuntimeException("Sua conta está temporariamente bloqueada. Tente novamente em "
+                            + (minRestantes + 1) + " minutos.");
+                }
+            }else {
                 usuario.setEstaBloqueado(false);
                 usuario.setTentativaSenha(0);
-                usuario.setHorarioBloqueio(null);
-
-                usuarioRepository.save(usuario);
-            }else{
-                long minRestantes = ChronoUnit.MINUTES.between(now, horarioDesbloqueio);
-                throw new RuntimeException("Sua conta está temporariamente bloqueada. Tente novamente em "
-                + (minRestantes + 1) + " minutos.");
             }
         }
 
@@ -130,9 +135,18 @@ public class UsuarioService {
                 () -> new RuntimeException("E-mail não encontrado no sistema")
         );
 
-        //compara o codigo enviado com o do banco
-        if (usuario.getCodigoRecuperacao() == null || !usuario.getCodigoRecuperacao().equals(dto.getCodigo())){
-            throw new RuntimeException("Código de verificação inválido");
+        if (usuario.getHorarioBloqueio() != null){
+            if (usuario.getHorarioBloqueio().isAfter(LocalDateTime.now())){
+                throw new RuntimeException("Conta bloqueada temporariamente. Tente novamente mais tarde");
+            }
+            usuario.setHorarioBloqueio(null);
+            usuario.setTentativaSenha(0);
+            usuario.setEstaBloqueado(false);
+        }
+
+        if(usuario.getHorarioGeracaoCodigo() == null ||
+            usuario.getHorarioGeracaoCodigo().isBefore(LocalDateTime.now().minusMinutes(5))){
+            throw new RuntimeException("O código expirou. Solicite um novo código");
         }
 
         //verifica tempo de expiração (5 min)
@@ -140,11 +154,32 @@ public class UsuarioService {
             throw new RuntimeException("O códigou expirou. Solicite novamente um novo código.");
         }
 
+        //compara o codigo enviado com o do banco
+        if (usuario.getCodigoRecuperacao() == null || !usuario.getCodigoRecuperacao().equals(dto.getCodigo())){
+            int tentativas = usuario.getTentativaSenha() + 1;
+            usuario.setTentativaSenha(tentativas);
+            int limite = 5;
+
+            if (tentativas >= limite){
+                usuario.setHorarioBloqueio(LocalDateTime.now().plusMinutes(5));
+                usuario.setEstaBloqueado(true);
+                usuarioRepository.save(usuario);
+
+                throw new RuntimeException("Número de tentativas excedido. Conta bloqueada por 5 minutos");
+            }
+
+            usuarioRepository.save(usuario);
+            int tentativasRestantes = limite - tentativas;
+            throw new RuntimeException("Código de verificação inválido. Você tem mais " + tentativasRestantes + " tentativas");
+        }
+
         //atualização da senha
         usuario.setSenha(passwordEncoder.encode(dto.getNovaSenha()));
         usuario.setCodigoRecuperacao(null);
         usuario.setHorarioGeracaoCodigo(null);
         usuario.setTentativaSenha(0); //se a conta estava bloqueada, aproveita para resetar as tentativas
+        usuario.setHorarioBloqueio(null);
+        usuario.setEstaBloqueado(false);
 
         usuarioRepository.save(usuario);
     }
