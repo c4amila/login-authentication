@@ -15,29 +15,33 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    @ExceptionHandler(RuntimeException.class)//exceção capturada do Service
-    public ResponseEntity<ErroResponseDTO> tratarRuntimeException(RuntimeException e){
-        ErroResponseDTO erro = new ErroResponseDTO(LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                "Erro na requisição",
-                e.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erro);
+
+    @ExceptionHandler(EmailCadastradoException.class)
+    public ResponseEntity<ErroResponseDTO> tratarEmailJaCadastrado(EmailCadastradoException e){
+        return resposta(HttpStatus.CONFLICT, "E-mail já cadastrado", e.getMessage());
     }
 
-    //exceção para campos mal preenchidos
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErroResponseDTO> tratarValidacaoDosCampos(MethodArgumentNotValidException m){
-        Map<String, String> erros = new HashMap<>();
+    @ExceptionHandler(CredenciaisInvalidasException.class)
+    public ResponseEntity<ErroResponseDTO> tratarCredenciaisInvalidas(CredenciaisInvalidasException e){
+        return resposta(HttpStatus.UNAUTHORIZED, "Credenciais inválidas", e.getMessage());
+    }
 
-        for (FieldError fieldError : m.getBindingResult().getFieldErrors()){
-            erros.put(fieldError.getField(), fieldError.getDefaultMessage());
-        }
+    @ExceptionHandler(ContaBloqueadaException.class)
+    public ResponseEntity<ErroResponseDTO> tratarContaBloqueada(ContaBloqueadaException e){
+        return resposta(HttpStatus.LOCKED, "Conta bloqueada", e.getMessage());
+    }
 
+    @ExceptionHandler(RequisicaoInvalidaException.class)
+    public ResponseEntity<ErroResponseDTO> tratarRequisicaoInvalida(RequisicaoInvalidaException e){
+        return resposta(HttpStatus.BAD_REQUEST, "Requisição inválida", e.getMessage());
+    }
+
+
+    private ResponseEntity<ErroResponseDTO> resposta(HttpStatus status, String titulo, String mensagem){
         ErroResponseDTO erro = new ErroResponseDTO(LocalDateTime.now(),
-                HttpStatus.UNPROCESSABLE_ENTITY.value(),
-                "Campos inválidos ou ausentes",
-                erros.toString());
-
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(erro);
+                status.value(),
+                titulo,
+                mensagem);
+        return ResponseEntity.status(status).body(erro);
     }
 }
