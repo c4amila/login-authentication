@@ -1,6 +1,10 @@
 package com.c4amila.LoginAuthentication.service;
 
 import com.c4amila.LoginAuthentication.dto.*;
+import com.c4amila.LoginAuthentication.exception.ContaBloqueadaException;
+import com.c4amila.LoginAuthentication.exception.CredenciaisInvalidasException;
+import com.c4amila.LoginAuthentication.exception.EmailCadastradoException;
+import com.c4amila.LoginAuthentication.exception.RequisicaoInvalidaException;
 import com.c4amila.LoginAuthentication.model.Usuario;
 import com.c4amila.LoginAuthentication.repository.UsuarioRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,7 +31,7 @@ public class UsuarioService {
     public UsuarioResponseDTO cadastrar(UsuarioCadastroRequestDTO dto){
         boolean emailExiste = usuarioRepository.findByEmail(dto.getEmail()).isPresent();
         if (emailExiste){
-            throw new RuntimeException("Este e-mail já está cadastrado no sistema");
+            throw new EmailCadastradoException("Este e-mail já está cadastrado no sistema");
         }
 
         Usuario novoUsuario = new Usuario();
@@ -55,7 +59,7 @@ public class UsuarioService {
 
     public UsuarioResponseDTO autenticar(UsuarioLoginRequestDTO dto){
         Usuario usuario = usuarioRepository.findByEmail(dto.getEmail())
-                .orElseThrow(() -> new RuntimeException("E-mail ou senha inválido"));
+                .orElseThrow(() -> new CredenciaisInvalidasException("E-mail ou senha inválido"));
 
         if (usuario.getEstaBloqueado()){
             if (usuario.getHorarioBloqueio() != null){
@@ -70,7 +74,7 @@ public class UsuarioService {
                     usuarioRepository.save(usuario);
                 }else{
                     long minRestantes = ChronoUnit.MINUTES.between(now, horarioDesbloqueio);
-                    throw new RuntimeException("Sua conta está temporariamente bloqueada. Tente novamente em "
+                    throw new ContaBloqueadaException("Sua conta está temporariamente bloqueada. Tente novamente em "
                             + (minRestantes + 1) + " minutos.");
                 }
             }else {
@@ -101,19 +105,19 @@ public class UsuarioService {
 
                 usuarioRepository.save(usuario);
 
-                throw new RuntimeException("5 tentativas incorretas. Você está bloqueado por 5 minutos");
+                throw new ContaBloqueadaException("5 tentativas incorretas. Você está bloqueado por 5 minutos");
             }
 
             //avisar o usuario conforme o saldo de tentativas diminui
             usuarioRepository.save(usuario);
             int tentativasRestantes = 5 - incrementaTentativa;
-            throw new RuntimeException("E-mail ou senha inválidos. Você tem mais " + tentativasRestantes + " tentativa(s)");
+            throw new CredenciaisInvalidasException("E-mail ou senha inválidos. Você tem mais " + tentativasRestantes + " tentativa(s)");
         }
     }
 
     public void solicitarRecuperacaoSenha(RecuperacaoSolicitacaoDTO dto){
         Usuario usuario = usuarioRepository.findByEmail(dto.getEmail()).orElseThrow(
-                () -> new RuntimeException("Foi enviado um código de recuperação. Verifique seu e-mail"));
+                () -> new RequisicaoInvalidaException("E-mail não encontrado"));
 
         int geracaoNum = secureRandom.nextInt(1_000_000);
         String codigo = String.format("%06d", geracaoNum); //gera codigo aleatorio
@@ -128,16 +132,16 @@ public class UsuarioService {
 
     public void validarRecuperacao(RecuperacaoConfirmacaoDTO dto){
         if (!dto.getNovaSenha().equals(dto.getConfirmarNovaSenha())){
-            throw new RuntimeException("As senhas não coincidem");
+            throw new RequisicaoInvalidaException("As senhas não coincidem");
         }
 
         Usuario usuario = usuarioRepository.findByEmail(dto.getEmail()).orElseThrow(
-                () -> new RuntimeException("E-mail não encontrado no sistema")
+                () -> new RequisicaoInvalidaException("E-mail não encontrado no sistema")
         );
 
         if (usuario.getHorarioBloqueio() != null){
             if (usuario.getHorarioBloqueio().isAfter(LocalDateTime.now())){
-                throw new RuntimeException("Conta bloqueada temporariamente. Tente novamente mais tarde");
+                throw new ContaBloqueadaException("Conta bloqueada temporariamente. Tente novamente mais tarde");
             }
             usuario.setHorarioBloqueio(null);
             usuario.setTentativaSenha(0);
@@ -146,12 +150,12 @@ public class UsuarioService {
 
         if(usuario.getHorarioGeracaoCodigo() == null ||
             usuario.getHorarioGeracaoCodigo().isBefore(LocalDateTime.now().minusMinutes(5))){
-            throw new RuntimeException("O código expirou. Solicite um novo código");
+            throw new RequisicaoInvalidaException("O código expirou. Solicite um novo código");
         }
 
         //verifica tempo de expiração (5 min)
         if (usuario.getHorarioGeracaoCodigo().isBefore(LocalDateTime.now().minusMinutes(5))){
-            throw new RuntimeException("O códigou expirou. Solicite novamente um novo código.");
+            throw new RequisicaoInvalidaException("O códigou expirou. Solicite novamente um novo código.");
         }
 
         //compara o codigo enviado com o do banco
@@ -165,12 +169,12 @@ public class UsuarioService {
                 usuario.setEstaBloqueado(true);
                 usuarioRepository.save(usuario);
 
-                throw new RuntimeException("Número de tentativas excedido. Conta bloqueada por 5 minutos");
+                throw new ContaBloqueadaException("Número de tentativas excedido. Conta bloqueada por 5 minutos");
             }
 
             usuarioRepository.save(usuario);
             int tentativasRestantes = limite - tentativas;
-            throw new RuntimeException("Código de verificação inválido. Você tem mais " + tentativasRestantes + " tentativas");
+            throw new CredenciaisInvalidasException("Código de verificação inválido. Você tem mais " + tentativasRestantes + " tentativas");
         }
 
         //atualização da senha
