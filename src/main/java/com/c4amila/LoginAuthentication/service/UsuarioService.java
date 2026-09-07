@@ -7,6 +7,7 @@ import com.c4amila.LoginAuthentication.exception.EmailCadastradoException;
 import com.c4amila.LoginAuthentication.exception.RequisicaoInvalidaException;
 import com.c4amila.LoginAuthentication.model.Usuario;
 import com.c4amila.LoginAuthentication.repository.UsuarioRepository;
+import com.c4amila.LoginAuthentication.security.TokenService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -20,12 +21,14 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final TokenService tokenService;
     private static final SecureRandom secureRandom = new SecureRandom();
 
-    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
+    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, EmailService emailService, TokenService tokenService) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
+        this.tokenService = tokenService;
     }
 
     public UsuarioResponseDTO cadastrar(UsuarioCadastroRequestDTO dto){
@@ -57,7 +60,7 @@ public class UsuarioService {
         return response;
     }
 
-    public UsuarioResponseDTO autenticar(UsuarioLoginRequestDTO dto){
+    public LoginResponseDTO autenticar(UsuarioLoginRequestDTO dto){
         Usuario usuario = usuarioRepository.findByEmail(dto.getEmail())
                 .orElseThrow(() -> new CredenciaisInvalidasException("E-mail ou senha inválido"));
 
@@ -88,13 +91,27 @@ public class UsuarioService {
             usuario.setTentativaSenha(0);
             usuarioRepository.save(usuario);
 
-            return new UsuarioResponseDTO(
+            String token = tokenService.gerarToken(usuario.getEmail());
+
+            UsuarioResponseDTO usuarioResponseDTO = new UsuarioResponseDTO(
                     usuario.getId(),
                     usuario.getNomeCompleto(),
                     usuario.getDataNascimento(),
                     usuario.getEmail(),
                     usuario.getTelefone()
             );
+
+            return new LoginResponseDTO(token, usuarioResponseDTO);
+
+//            return new UsuarioResponseDTO(
+//                    usuario.getId(),
+//                    usuario.getNomeCompleto(),
+//                    usuario.getDataNascimento(),
+//                    usuario.getEmail(),
+//                    usuario.getTelefone()
+//            );
+
+
         }else{
             int incrementaTentativa = usuario.getTentativaSenha() + 1;
             usuario.setTentativaSenha(incrementaTentativa);

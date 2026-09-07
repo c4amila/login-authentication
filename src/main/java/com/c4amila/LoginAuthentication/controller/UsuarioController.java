@@ -1,15 +1,14 @@
 package com.c4amila.LoginAuthentication.controller;
 
 import com.c4amila.LoginAuthentication.dto.*;
+import com.c4amila.LoginAuthentication.security.UsuarioDetails;
 import com.c4amila.LoginAuthentication.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,8 +25,8 @@ public class UsuarioController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UsuarioResponseDTO> autenticar(@Valid @RequestBody UsuarioLoginRequestDTO requestDTO){
-        UsuarioResponseDTO responseDTO = usuarioService.autenticar(requestDTO);
+    public ResponseEntity<LoginResponseDTO> autenticar(@Valid @RequestBody UsuarioLoginRequestDTO requestDTO){
+        LoginResponseDTO responseDTO = usuarioService.autenticar(requestDTO);
 
         return ResponseEntity.ok(responseDTO);
     }
