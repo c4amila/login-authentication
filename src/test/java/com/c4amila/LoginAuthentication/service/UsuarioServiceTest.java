@@ -9,6 +9,7 @@ import com.c4amila.LoginAuthentication.exception.EmailCadastradoException;
 import com.c4amila.LoginAuthentication.exception.RequisicaoInvalidaException;
 import com.c4amila.LoginAuthentication.model.Usuario;
 import com.c4amila.LoginAuthentication.repository.UsuarioRepository;
+import com.c4amila.LoginAuthentication.security.TokenService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,14 +27,16 @@ public class UsuarioServiceTest {
     private UsuarioRepository usuarioRepository;
     private EmailService emailService;
     private PasswordEncoder passwordEncoder;
+    private TokenService tokenService;
 
     @BeforeEach
     void setUp(){
         this.usuarioRepository = mock(UsuarioRepository.class);
         this.passwordEncoder = mock(PasswordEncoder.class);
         this.emailService = mock(EmailService.class);
+        this.tokenService = mock(TokenService.class);
 
-        this.usuarioService = new UsuarioService(usuarioRepository, passwordEncoder, emailService);
+        this.usuarioService = new UsuarioService(usuarioRepository, passwordEncoder, emailService, tokenService);
     }
 
     @Test
