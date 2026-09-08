@@ -24,6 +24,8 @@ public class UsuarioService {
     private final TokenService tokenService;
     private static final SecureRandom secureRandom = new SecureRandom();
 
+    private static final int LIMITE_TENTATIVAS = 5;
+
     public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, EmailService emailService, TokenService tokenService) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
@@ -116,7 +118,7 @@ public class UsuarioService {
             int incrementaTentativa = usuario.getTentativaSenha() + 1;
             usuario.setTentativaSenha(incrementaTentativa);
 
-            if (incrementaTentativa >= 5){//se sim, bloqueia por 5min
+            if (incrementaTentativa >= LIMITE_TENTATIVAS){//se sim, bloqueia por 5min
                 usuario.setEstaBloqueado(true);
                 usuario.setHorarioBloqueio(LocalDateTime.now());
 

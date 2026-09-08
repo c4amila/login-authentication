@@ -36,7 +36,8 @@ public class SecurityConfig {
                                 "/usuarios/cadastro",
                                 "/usuarios/login",
                                 "/usuarios/recuperar-senha",
-                                "/usuarios/confirmar-senha"
+                                "/usuarios/confirmar-senha",
+                                "/usuarios/sair"
                         ).permitAll().anyRequest().authenticated())
                         .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); //libera as rotas
 

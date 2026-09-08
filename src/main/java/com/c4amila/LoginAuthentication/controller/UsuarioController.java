@@ -42,4 +42,25 @@ public class UsuarioController {
         usuarioService.validarRecuperacao(dto);
         return ResponseEntity.ok("Senha atualizada com sucesso!");
     }
+
+    @PostMapping("/sair")
+    public ResponseEntity<Void> logout(){
+        return ResponseEntity.noContent().build();
+    }
+
+
+    @GetMapping("/teste")
+    public ResponseEntity<UsuarioResponseDTO> dadosTeste(@AuthenticationPrincipal UsuarioDetails usuarioDetails){
+        var usuario = usuarioDetails.getUsuario();
+
+        UsuarioResponseDTO responseDTO = new UsuarioResponseDTO(
+                usuario.getId(),
+                usuario.getNomeCompleto(),
+                usuario.getDataNascimento(),
+                usuario.getEmail(),
+                usuario.getTelefone()
+        );
+
+        return ResponseEntity.ok(responseDTO);
+    }
 }
