@@ -37,7 +37,10 @@ public class SecurityConfig {
                                 "/usuarios/login",
                                 "/usuarios/recuperar-senha",
                                 "/usuarios/confirmar-senha",
-                                "/usuarios/sair"
+                                "/usuarios/sair",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
                         ).permitAll().anyRequest().authenticated())
                         .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); //libera as rotas
 
