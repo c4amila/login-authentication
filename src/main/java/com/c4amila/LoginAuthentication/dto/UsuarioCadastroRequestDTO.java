@@ -1,10 +1,7 @@
 package com.c4amila.LoginAuthentication.dto;
 
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Past;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,6 +17,7 @@ public class UsuarioCadastroRequestDTO {
     @NotBlank(message = "Nome é obrigatório")
     private String nomeCompleto;
 
+    @NotNull(message = "A data de nascimento é obrigatória")
     @Past(message = "A data de nascimento deve ser uma data no passado")
     private LocalDate dataNascimento;
 

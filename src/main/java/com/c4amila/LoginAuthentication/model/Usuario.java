@@ -23,9 +23,9 @@ public class Usuario {
     @Column(name = "nome_completo")
     private String nomeCompleto;
 
+    @NotNull(message = "A data de nascimento é obrigatória")
     @Past(message = "A data de nascimento deve ser uma data no passado")
     @Column(name = "data_nascimento")
-    @NotNull
     private LocalDate dataNascimento;
 
     @NotBlank(message = "O telefone é obrigatório")

@@ -193,7 +193,7 @@ public class UsuarioService {
 
     public void logout(LogoutDTO dto){
         Usuario usuario = usuarioRepository.findByEmail(dto.getEmail())
-                .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuário não encontrado"));git
+                .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuário não encontrado"));
     }
 
 }
