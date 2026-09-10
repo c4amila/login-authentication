@@ -44,8 +44,9 @@ public class UsuarioController {
     }
 
     @PostMapping("/sair")
-    public ResponseEntity<Void> logout(){
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<String> logout(@Valid @RequestBody LogoutDTO dto){
+        usuarioService.logout(dto);
+        return ResponseEntity.ok("Logout realizado com sucesso");
     }
 
 
