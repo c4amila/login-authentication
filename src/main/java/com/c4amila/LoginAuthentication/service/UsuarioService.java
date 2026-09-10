@@ -1,10 +1,7 @@
 package com.c4amila.LoginAuthentication.service;
 
 import com.c4amila.LoginAuthentication.dto.*;
-import com.c4amila.LoginAuthentication.exception.ContaBloqueadaException;
-import com.c4amila.LoginAuthentication.exception.CredenciaisInvalidasException;
-import com.c4amila.LoginAuthentication.exception.EmailCadastradoException;
-import com.c4amila.LoginAuthentication.exception.RequisicaoInvalidaException;
+import com.c4amila.LoginAuthentication.exception.*;
 import com.c4amila.LoginAuthentication.model.Usuario;
 import com.c4amila.LoginAuthentication.repository.UsuarioRepository;
 import com.c4amila.LoginAuthentication.security.TokenService;
@@ -56,6 +53,7 @@ public class UsuarioService {
         UsuarioResponseDTO response = new UsuarioResponseDTO();
         response.setId(usuarioSalvo.getId());
         response.setNomeCompleto(usuarioSalvo.getNomeCompleto());
+        response.setDataNascimento(usuarioSalvo.getDataNascimento());
         response.setEmail(usuarioSalvo.getEmail());
         response.setTelefone(usuarioSalvo.getTelefone());
 
@@ -104,15 +102,6 @@ public class UsuarioService {
             );
 
             return new LoginResponseDTO(token, usuarioResponseDTO);
-
-//            return new UsuarioResponseDTO(
-//                    usuario.getId(),
-//                    usuario.getNomeCompleto(),
-//                    usuario.getDataNascimento(),
-//                    usuario.getEmail(),
-//                    usuario.getTelefone()
-//            );
-
 
         }else{
             int incrementaTentativa = usuario.getTentativaSenha() + 1;
@@ -200,6 +189,11 @@ public class UsuarioService {
         usuario.setEstaBloqueado(false);
 
         usuarioRepository.save(usuario);
+    }
+
+    public void logout(LogoutDTO dto){
+        Usuario usuario = usuarioRepository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuário não encontrado"));git
     }
 
 }
