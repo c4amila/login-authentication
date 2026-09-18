@@ -34,7 +34,7 @@ public class UsuarioController {
     @PostMapping("/recuperar-senha")
     public ResponseEntity<String> soliticarRecuperacao(@Valid @RequestBody RecuperacaoSolicitacaoDTO dto){
         usuarioService.solicitarRecuperacaoSenha(dto);
-        return ResponseEntity.ok("Um código de verificação foi encaminhado para o seu e-mail");
+        return ResponseEntity.ok("Se existir uma conta associada a este e-mail, enviaremos as instruções para recuperação da senha.");
     }
 
     @PostMapping("/confirmar-senha")
@@ -49,7 +49,7 @@ public class UsuarioController {
         return ResponseEntity.ok("Logout realizado com sucesso");
     }
 
-
+    //test
     @GetMapping("/teste")
     public ResponseEntity<UsuarioResponseDTO> dadosTeste(@AuthenticationPrincipal UsuarioDetails usuarioDetails){
         var usuario = usuarioDetails.getUsuario();
