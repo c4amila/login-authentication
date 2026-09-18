@@ -1,6 +1,6 @@
 package com.c4amila.LoginAuthentication.dto;
 
-import jakarta.persistence.Column;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
@@ -10,9 +10,11 @@ import lombok.Setter;
 @Setter
 public class RecuperacaoConfirmacaoDTO {
     @NotBlank(message = "O e-mail é obrigatório")
+    @Email(message = "insira um e-mail válido")
     private String email;
 
     @NotBlank(message = "O código de verificação é obrigatório")
+    @Pattern(regexp = "^\\d{6}$", message = "O código deve ter 6 dígitos")
     private String codigo;
 
     @NotBlank(message = "A nova senha é obrigatória")

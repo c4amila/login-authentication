@@ -44,18 +44,24 @@ public class Usuario {
     message = "A senha deve conter pelo menos uma letra maiúscula, uma letra minúscula, um caractere especial (!@#$%&*+=) e no mínimo 8 carateres")
     private String senha;
 
-    @Column(name = "tentativas_senha", nullable = false)
-    private Integer tentativaSenha = 0;
-
-    @Column(name = "horario_bloqueio")
-    private LocalDateTime horarioBloqueio;
-
-    @Column(name = "esta_bloqueado", nullable = false)
-    private Boolean estaBloqueado = false;
-
     @Column(name = "codigo_recuperacao")
     private String codigoRecuperacao;
 
-    @Column(name = "horario_geracao_codigo")
-    private LocalDateTime horarioGeracaoCodigo;
+    @Column(name = "cod_recuperacao_expira_em")
+    private LocalDateTime codRecuperacaoExpiraEm;
+
+    @Column(name = "tentativas_login", nullable = false)
+    private Integer tentativaLogin = 0;
+
+    @Column(name = "login_bloqueado_ate")
+    private LocalDateTime loginBloqueadoAte;
+
+    @Column(name = "horario_expiracao_codigo")
+    private LocalDateTime horarioExpiracaoCodigo;
+
+    @Column(name = "tentativa_recuperacao", nullable = false)
+    private Integer tentativasRecuperacao = 0;
+
+    @Column(name = "cod_recuperacao_bloqueado_ate")
+    private LocalDateTime CodRecuperacaoBloqueadoAte;
 }
