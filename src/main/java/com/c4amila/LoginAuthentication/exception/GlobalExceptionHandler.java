@@ -32,7 +32,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ContaBloqueadaException.class)
     public ResponseEntity<ErroResponseDTO> tratarContaBloqueada(ContaBloqueadaException e){
-        return resposta(HttpStatus.LOCKED, "Conta bloqueada", e.getMessage());
+        return resposta(HttpStatus.LOCKED, "Operação bloqueada temporariamente", e.getMessage());
     }
 
     @ExceptionHandler(UsuarioNaoEncontradoException.class)
