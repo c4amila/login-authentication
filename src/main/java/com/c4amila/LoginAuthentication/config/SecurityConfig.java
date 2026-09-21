@@ -1,5 +1,6 @@
 package com.c4amila.LoginAuthentication.config;
 
+import com.c4amila.LoginAuthentication.security.JwtAuthEntryPoint;
 import com.c4amila.LoginAuthentication.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,10 +16,23 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final JwtAuthFilter jwtAuthFilter;
+    private static final String[] ROTAS_PUBLICAS =  {
+            "/usuarios/cadastro",
+            "/usuarios/login",
+            "/usuarios/recuperar-senha",
+            "/usuarios/confirmar-senha",
+            "/usuarios/sair",
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html"
+    };
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+    private final JwtAuthFilter jwtAuthFilter;
+    private final JwtAuthEntryPoint jwtAuthEntryPoint;
+
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter, JwtAuthEntryPoint jwtAuthEntryPoint) {
         this.jwtAuthFilter = jwtAuthFilter;
+        this.jwtAuthEntryPoint = jwtAuthEntryPoint;
     }
 
     @Bean
@@ -29,19 +43,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable()) //desabilita csrf
-                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthEntryPoint))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/usuarios/cadastro",
-                                "/usuarios/login",
-                                "/usuarios/recuperar-senha",
-                                "/usuarios/confirmar-senha",
-                                "/usuarios/sair",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html"
-                        ).permitAll().anyRequest().authenticated())
+                        .requestMatchers(ROTAS_PUBLICAS)
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated()
+                )
                         .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); //libera as rotas
 
         return http.build();
