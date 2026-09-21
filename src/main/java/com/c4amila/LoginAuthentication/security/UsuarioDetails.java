@@ -4,6 +4,7 @@ import com.c4amila.LoginAuthentication.model.Usuario;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -36,7 +37,10 @@ public class UsuarioDetails implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked(){
-        return !Boolean.TRUE.equals(usuario.getEstaBloqueado());
+        if (usuario.getLoginBloqueadoAte() == null){
+            return true;
+        }
+        return LocalDateTime.now().isAfter(usuario.getLoginBloqueadoAte());
     }
 
     @Override
