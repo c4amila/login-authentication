@@ -15,6 +15,17 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private static final String[] ROTAS_PUBLICAS =  {
+            "/usuarios/cadastro",
+            "/usuarios/login",
+            "/usuarios/recuperar-senha",
+            "/usuarios/confirmar-senha",
+            "/usuarios/sair",
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html"
+    };
+
     private final JwtAuthFilter jwtAuthFilter;
 
     public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
@@ -32,16 +43,7 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/usuarios/cadastro",
-                                "/usuarios/login",
-                                "/usuarios/recuperar-senha",
-                                "/usuarios/confirmar-senha",
-                                "/usuarios/sair",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html"
-                        ).permitAll().anyRequest().authenticated())
+                        .requestMatchers(ROTAS_PUBLICAS).permitAll().anyRequest().authenticated())
                         .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); //libera as rotas
 
         return http.build();
