@@ -2,7 +2,6 @@ package com.c4amila.LoginAuthentication.exception;
 
 
 import com.c4amila.LoginAuthentication.dto.ErroResponseDTO;
-import com.c4amila.LoginAuthentication.dto.LogoutDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -36,7 +35,7 @@ public class GlobalExceptionHandler {
         return resposta(HttpStatus.LOCKED, "Conta bloqueada", e.getMessage());
     }
 
-    @ExceptionHandler()
+    @ExceptionHandler(UsuarioNaoEncontradoException.class)
     public ResponseEntity<ErroResponseDTO> tratarUsuarioNaoEncontrado(UsuarioNaoEncontradoException e){
         return resposta(HttpStatus.NOT_FOUND, "Usuário não encontrado", e.getMessage());
     }
