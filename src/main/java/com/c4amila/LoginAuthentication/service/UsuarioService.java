@@ -87,7 +87,7 @@ public class UsuarioService {
                 usuario.getCodVerificacaoExpiraEm() == null ||
                 now.isAfter(usuario.getCodVerificacaoExpiraEm())){
 
-            throw new RequisicaoInvalidaException("Código de recuperação inválido ou expirado. Solicite um novo código");
+            throw new RequisicaoInvalidaException("Código de verificação inválido ou expirado. Solicite um novo código");
         }
 
         boolean codigoCorreto = passwordEncoder.matches(dto.getCodigo(), usuario.getCodigoVerificacaoConta());
