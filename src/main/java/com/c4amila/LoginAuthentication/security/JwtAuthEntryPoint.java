@@ -31,7 +31,7 @@ public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
         ErroResponseDTO erro = new ErroResponseDTO(
                 LocalDateTime.now(),
                 HttpStatus.UNAUTHORIZED.value(),
-                "Não encontrado",
+                "Não autenticado",
                 "É necessário estar autenticado para acessar este recurso"
         );
 
