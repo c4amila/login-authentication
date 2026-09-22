@@ -5,7 +5,6 @@ import com.c4amila.LoginAuthentication.exception.*;
 import com.c4amila.LoginAuthentication.model.Usuario;
 import com.c4amila.LoginAuthentication.repository.UsuarioRepository;
 import com.c4amila.LoginAuthentication.security.TokenService;
-import org.springframework.cglib.core.Local;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -39,7 +38,7 @@ public class UsuarioService {
         this.tokenService = tokenService;
     }
 
-    public UsuarioResponseDTO cadastrar(UsuarioCadastroRequestDTO dto){
+    public UsuarioCadastroResponseDTO cadastrar(UsuarioCadastroRequestDTO dto){
         String emailValidado = normalizarEmail(dto.getEmail());
         boolean emailExiste = usuarioRepository.existsByEmail(emailValidado);
         if (emailExiste){
@@ -62,7 +61,12 @@ public class UsuarioService {
                 usuarioSalvo.getNomeCompleto(),
                 codigo);
 
-        return criarUsuarioResponseDTO(usuarioSalvo);
+        UsuarioResponseDTO usuarioResponseDTO = criarUsuarioResponseDTO(usuarioSalvo);
+
+        return new UsuarioCadastroResponseDTO(
+                "Cadastro realizado com sucesso. Enviamos um código de verificação para seu e-mail.",
+                usuarioResponseDTO
+        );
     }
 
     public void verificarConta(VerificacaoContaDTO dto){
@@ -104,9 +108,38 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
+    public void reenviarCodigoVerificacao(SolicitacaoCodigoDTO dto){
+        String emailValidado = normalizarEmail(dto.getEmail());
+
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(emailValidado);
+
+        if (usuarioOpt.isEmpty()){
+            return;
+        }
+
+        Usuario usuario = usuarioOpt.get();
+
+        String codigo = gerarCodigo();
+        String codigoHash = passwordEncoder.encode(codigo);
+
+        usuario.setCodigoVerificacaoConta(codigoHash);
+        usuario.setCodVerificacaoExpiraEm(LocalDateTime.now().plusMinutes(MIN_EXPIRACAO_CODIGO));
+
+        usuarioRepository.save(usuario);
+        emailService.enviarEmailVerificacao(usuario.getEmail(),
+                usuario.getNomeCompleto(),
+                codigo);
+    }
+
     public LoginResponseDTO autenticar(UsuarioLoginRequestDTO dto){
         Usuario usuario = usuarioRepository.findByEmail(dto.getEmail())
                 .orElseThrow(() -> new CredenciaisInvalidasException("E-mail ou senha inválido"));
+
+        if(!Boolean.TRUE.equals(usuario.getContaVerificada())){
+            throw new RequisicaoInvalidaException(
+                    "A conta ainda não foi verificada"
+            );
+        }
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -126,7 +159,7 @@ public class UsuarioService {
         return new LoginResponseDTO(token, usuarioResponseDTO);
     }
 
-    public void solicitarRecuperacaoSenha(RecuperacaoSolicitacaoDTO dto){
+    public void solicitarRecuperacaoSenha(SolicitacaoCodigoDTO dto){
         Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(dto.getEmail());
 
         if (usuarioOpt.isEmpty()){
