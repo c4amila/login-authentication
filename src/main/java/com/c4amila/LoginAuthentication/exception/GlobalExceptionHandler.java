@@ -35,6 +35,11 @@ public class GlobalExceptionHandler {
         return resposta(HttpStatus.LOCKED, "Operação bloqueada temporariamente", e.getMessage());
     }
 
+    @ExceptionHandler(ContaNaoVerificadaException.class)
+    public ResponseEntity<ErroResponseDTO> tratarContaNaoVerificada(ContaNaoVerificadaException e){
+        return resposta(HttpStatus.UNAUTHORIZED, "Conta não verificada", e.getMessage());
+    }
+
     @ExceptionHandler(UsuarioNaoEncontradoException.class)
     public ResponseEntity<ErroResponseDTO> tratarUsuarioNaoEncontrado(UsuarioNaoEncontradoException e){
         return resposta(HttpStatus.NOT_FOUND, "Usuário não encontrado", e.getMessage());
