@@ -24,6 +24,12 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
+    @PostMapping("/verificar-conta")
+    public ResponseEntity<String> verificarConta(@Valid @RequestBody VerificacaoContaDTO dto){
+        usuarioService.verificarConta(dto);
+        return ResponseEntity.ok("Conta verificada com sucesso!");
+    }
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> autenticar(@Valid @RequestBody UsuarioLoginRequestDTO requestDTO){
         LoginResponseDTO responseDTO = usuarioService.autenticar(requestDTO);
