@@ -16,6 +16,5 @@ public class VerificacaoContaDTO {
     private String email;
 
     @NotBlank(message = "O código de verificação é obrigatório")
-    @Pattern(regexp = "^\\d{6}$", message = "O código deve ter 6 dígitos")
     private String codigo;
 }
