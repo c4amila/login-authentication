@@ -58,7 +58,7 @@ public class UsuarioService {
         configurarVerificacaoDeConta(novoUsuario, codigo);
 
         Usuario usuarioSalvo = usuarioRepository.save(novoUsuario);
-        emailService.enviarEmailRecuperacao(usuarioSalvo.getEmail(),
+        emailService.enviarEmailVerificacao(usuarioSalvo.getEmail(),
                 usuarioSalvo.getNomeCompleto(),
                 codigo);
 
