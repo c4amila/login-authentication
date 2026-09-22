@@ -40,7 +40,8 @@ public class UsuarioService {
     }
 
     public UsuarioResponseDTO cadastrar(UsuarioCadastroRequestDTO dto){
- boolean emailExiste = usuarioRepository.existsByEmail(dto.getEmail());
+        String emailValidado = normalizarEmail(dto.getEmail());
+        boolean emailExiste = usuarioRepository.existsByEmail(emailValidado);
         if (emailExiste){
             throw new EmailCadastradoException("Este e-mail já está cadastrado no sistema");
         }
@@ -48,13 +49,18 @@ public class UsuarioService {
         Usuario novoUsuario = new Usuario();
         novoUsuario.setNomeCompleto(dto.getNomeCompleto());
         novoUsuario.setDataNascimento(dto.getDataNascimento());
-        novoUsuario.setEmail(dto.getEmail());
+        novoUsuario.setEmail(emailValidado);
         novoUsuario.setTelefone(dto.getTelefone().trim());
         novoUsuario.setSenha(passwordEncoder.encode(dto.getSenha()));
 
         String codigo = gerarCodigo();
 
+        configurarVerificacaoDeConta(novoUsuario, codigo);
+
         Usuario usuarioSalvo = usuarioRepository.save(novoUsuario);
+        emailService.enviarEmailRecuperacao(usuarioSalvo.getEmail(),
+                usuarioSalvo.getNomeCompleto(),
+                codigo);
 
         return criarUsuarioResponseDTO(usuarioSalvo);
     }
@@ -63,7 +69,9 @@ public class UsuarioService {
         String emailValidado = normalizarEmail(dto.getEmail());
 
         Usuario usuario = usuarioRepository.findByEmail(emailValidado).orElseThrow(
-                () -> new RequisicaoInvalidaException("Dados de verificação inválidos")
+                () -> new RequisicaoInvalidaException(
+                        "Dados de verificação inválidos"
+                )
         );
 
         if(usuario.getContaVerificada()){
