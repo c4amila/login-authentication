@@ -95,6 +95,9 @@ public class UsuarioService {
             registrarTentativaVerificacaoInvalida(usuario, now);
         }
 
+        usuario.setContaVerificada(true);
+        usuario.setCodigoVerificacaoConta(null);
+        usuario.setCodVerificacaoExpiraEm(null);
         usuario.setVerificacaoBloqueadaAte(null);
         usuario.setTentativasVerificacao(0);
 
