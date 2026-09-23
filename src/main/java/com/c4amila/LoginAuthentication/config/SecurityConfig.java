@@ -19,6 +19,7 @@ public class SecurityConfig {
     private static final String[] ROTAS_PUBLICAS =  {
             "/usuarios/cadastro",
             "/usuarios/verificar-conta",
+            "/usuarios/reenviar-codigo-verificacao",
             "/usuarios/login",
             "/usuarios/recuperar-senha",
             "/usuarios/confirmar-senha",
