@@ -7,7 +7,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class RecuperacaoSolicitacaoDTO {
+public class SolicitacaoCodigoDTO {
 
     @NotBlank(message = "O e-mail é obrigatório")
     @Email(message = "Insira um e-mail vállido")
