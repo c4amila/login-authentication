@@ -44,6 +44,21 @@ public class Usuario {
     message = "A senha deve conter pelo menos uma letra maiúscula, uma letra minúscula, um caractere especial (!@#$%&*+=) e no mínimo 8 carateres")
     private String senha;
 
+    @Column(name = "conta_verificada", nullable = false)
+    private Boolean contaVerificada = false;
+
+    @Column(name = "codigo_verificacao_conta")
+    private String codigoVerificacaoConta;
+
+    @Column(name = "cod_verificacao_expira_em")
+    private LocalDateTime codVerificacaoExpiraEm;
+
+    @Column(name = "tentativas_verificacao", nullable = false)
+    private int tentativasVerificacao = 0;
+
+    @Column(name = "verificacao_bloqueada_ate")
+    private LocalDateTime verificacaoBloqueadaAte;
+
     @Column(name = "codigo_recuperacao")
     private String codigoRecuperacao;
 

@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
@@ -25,12 +26,12 @@ public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
     public void commence(
             HttpServletRequest request,
             HttpServletResponse response,
-            AuthenticationEntryPoint authException
+            AuthenticationException authException
     ) throws IOException, ServletException {
         ErroResponseDTO erro = new ErroResponseDTO(
                 LocalDateTime.now(),
                 HttpStatus.UNAUTHORIZED.value(),
-                "Não encontrado",
+                "Não autenticado",
                 "É necessário estar autenticado para acessar este recurso"
         );
 

@@ -26,4 +26,18 @@ public class EmailService {
 
         javaMailSender.send(msg);
     }
+
+    public void enviarEmailVerificacao(String para, String nomeUsuario, String codigoToken){
+        SimpleMailMessage msg = new SimpleMailMessage();
+
+        msg.setFrom("nao-responda@sisstema.com");
+        msg.setTo(para);
+        msg.setSubject("Verificação de conta");
+        msg.setText("Olá " + nomeUsuario + "!\n\nSua conta foi criada com sucesso!\n" +
+                "Para concluir o cadastro, utilize o código abaixo:\n\n" +
+                "Código: " + codigoToken + "\n\n" +
+                "Este código expira em breve. Se você não criou esta conta, ignore este e-mail.");
+
+        javaMailSender.send(msg);
+    }
 }

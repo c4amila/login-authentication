@@ -5,13 +5,13 @@ import com.c4amila.LoginAuthentication.exception.*;
 import com.c4amila.LoginAuthentication.model.Usuario;
 import com.c4amila.LoginAuthentication.repository.UsuarioRepository;
 import com.c4amila.LoginAuthentication.security.TokenService;
-import org.springframework.cglib.core.Local;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.security.SecureRandom;
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -25,8 +25,10 @@ public class UsuarioService {
 
     private static final int LIMITE_TENTATIVAS = 5;
     private static final int LIMITE_TENTATIVAS_RECUPERACAO = 5;
+    private static final int LIMITE_TENTATIVAS_VERIFICACAO = 5;
     private static final int MINUTOS_BLOQUEIO = 5;
     private static final int MINUTOS_BLOQUEIO_RECUPERACAO = 5;
+    private static final int MINUTOS_BLOQUEIO_VERIFICACAO = 5;
     private static final int MIN_EXPIRACAO_CODIGO = 5;
 
     public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, EmailService emailService, TokenService tokenService) {
@@ -36,8 +38,9 @@ public class UsuarioService {
         this.tokenService = tokenService;
     }
 
-    public UsuarioResponseDTO cadastrar(UsuarioCadastroRequestDTO dto){
-        boolean emailExiste = usuarioRepository.existsByEmail(dto.getEmail());
+    public UsuarioCadastroResponseDTO cadastrar(UsuarioCadastroRequestDTO dto){
+        String emailValidado = normalizarEmail(dto.getEmail());
+        boolean emailExiste = usuarioRepository.existsByEmail(emailValidado);
         if (emailExiste){
             throw new EmailCadastradoException("Este e-mail já está cadastrado no sistema");
         }
@@ -45,18 +48,98 @@ public class UsuarioService {
         Usuario novoUsuario = new Usuario();
         novoUsuario.setNomeCompleto(dto.getNomeCompleto());
         novoUsuario.setDataNascimento(dto.getDataNascimento());
-        novoUsuario.setEmail(dto.getEmail());
-        novoUsuario.setTelefone(dto.getTelefone());
+        novoUsuario.setEmail(emailValidado);
+        novoUsuario.setTelefone(dto.getTelefone().trim());
         novoUsuario.setSenha(passwordEncoder.encode(dto.getSenha()));
 
-        Usuario usuarioSalvo = usuarioRepository.save(novoUsuario);
+        String codigo = gerarCodigo();
 
-        return criarUsuarioResponseDTO(usuarioSalvo);
+        configurarVerificacaoDeConta(novoUsuario, codigo);
+
+        Usuario usuarioSalvo = usuarioRepository.save(novoUsuario);
+        emailService.enviarEmailVerificacao(usuarioSalvo.getEmail(),
+                usuarioSalvo.getNomeCompleto(),
+                codigo);
+
+        UsuarioResponseDTO usuarioResponseDTO = criarUsuarioResponseDTO(usuarioSalvo);
+
+        return new UsuarioCadastroResponseDTO(
+                "Cadastro realizado com sucesso. Enviamos um código de verificação para seu e-mail.",
+                usuarioResponseDTO
+        );
+    }
+
+    public void verificarConta(VerificacaoContaDTO dto){
+        String emailValidado = normalizarEmail(dto.getEmail());
+
+        Usuario usuario = usuarioRepository.findByEmail(emailValidado).orElseThrow(
+                () -> new RequisicaoInvalidaException(
+                        "Dados de verificação inválidos"
+                )
+        );
+
+        if(usuario.getContaVerificada()){
+            throw new RequisicaoInvalidaException(
+                    "A conta já foi verificada"
+            );
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        verificarBloqueioVerificacaoConta(usuario, now);
+
+        if(usuario.getCodigoVerificacaoConta() == null ||
+                usuario.getCodVerificacaoExpiraEm() == null ||
+                now.isAfter(usuario.getCodVerificacaoExpiraEm())){
+
+            throw new RequisicaoInvalidaException("Código de verificação inválido ou expirado. Solicite um novo código");
+        }
+
+        boolean codigoCorreto = passwordEncoder.matches(dto.getCodigo(), usuario.getCodigoVerificacaoConta());
+        if (!codigoCorreto){
+            registrarTentativaVerificacaoInvalida(usuario, now);
+        }
+
+        usuario.setContaVerificada(true);
+        usuario.setCodigoVerificacaoConta(null);
+        usuario.setCodVerificacaoExpiraEm(null);
+        usuario.setVerificacaoBloqueadaAte(null);
+        usuario.setTentativasVerificacao(0);
+
+        usuarioRepository.save(usuario);
+    }
+
+    public void reenviarCodigoVerificacao(SolicitacaoCodigoDTO dto){
+        String emailValidado = normalizarEmail(dto.getEmail());
+
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(emailValidado);
+
+        if (usuarioOpt.isEmpty()){
+            return;
+        }
+
+        Usuario usuario = usuarioOpt.get();
+
+        String codigo = gerarCodigo();
+        String codigoHash = passwordEncoder.encode(codigo);
+
+        usuario.setCodigoVerificacaoConta(codigoHash);
+        usuario.setCodVerificacaoExpiraEm(LocalDateTime.now().plusMinutes(MIN_EXPIRACAO_CODIGO));
+
+        usuarioRepository.save(usuario);
+        emailService.enviarEmailVerificacao(usuario.getEmail(),
+                usuario.getNomeCompleto(),
+                codigo);
     }
 
     public LoginResponseDTO autenticar(UsuarioLoginRequestDTO dto){
         Usuario usuario = usuarioRepository.findByEmail(dto.getEmail())
                 .orElseThrow(() -> new CredenciaisInvalidasException("E-mail ou senha inválido"));
+
+        if(!Boolean.TRUE.equals(usuario.getContaVerificada())){
+            throw new RequisicaoInvalidaException(
+                    "A conta ainda não foi verificada"
+            );
+        }
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -76,7 +159,7 @@ public class UsuarioService {
         return new LoginResponseDTO(token, usuarioResponseDTO);
     }
 
-    public void solicitarRecuperacaoSenha(RecuperacaoSolicitacaoDTO dto){
+    public void solicitarRecuperacaoSenha(SolicitacaoCodigoDTO dto){
         Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(dto.getEmail());
 
         if (usuarioOpt.isEmpty()){
@@ -85,7 +168,7 @@ public class UsuarioService {
 
         Usuario usuario = usuarioOpt.get();
 
-        String codigo = gerarCodigoRecuperacao();
+        String codigo = gerarCodigo();
         String codigoHash = passwordEncoder.encode(codigo);
 
         usuario.setCodigoRecuperacao(codigoHash);
@@ -171,6 +254,22 @@ public class UsuarioService {
 
         usuarioRepository.save(usuario);
     }
+    private void verificarBloqueioVerificacaoConta(Usuario usuario, LocalDateTime now){
+        if (usuario.getVerificacaoBloqueadaAte() == null){
+            return;
+        }
+
+        if (now.isBefore(usuario.getVerificacaoBloqueadaAte())){
+            throw new ContaBloqueadaException(
+                    "Conta temporariamente bloqueada. Tente novamente mais tarde"
+            );
+        }
+
+        usuario.setVerificacaoBloqueadaAte(null);
+        usuario.setTentativasVerificacao(0);
+
+        usuarioRepository.save(usuario);
+    }
     private void registrarTentativaLoginInvalida(Usuario usuario, LocalDateTime now){
         int tentativasLogin = usuario.getTentativaLogin() + 1;
         usuario.setTentativaLogin(tentativasLogin);
@@ -213,6 +312,31 @@ public class UsuarioService {
         throw new CredenciaisInvalidasException("Código de verificação inválido. Você tem mais " + tentativasRestantes + " tentativas");
 
     }
+    private void registrarTentativaVerificacaoInvalida(Usuario usuario, LocalDateTime now){
+        int tentativas = usuario.getTentativasVerificacao() + 1;
+
+        usuario.setTentativasVerificacao(tentativas);
+
+        if (tentativas >= LIMITE_TENTATIVAS_VERIFICACAO){
+            usuario.setVerificacaoBloqueadaAte(now.plusMinutes(MINUTOS_BLOQUEIO_VERIFICACAO));
+            usuario.setTentativasVerificacao(0);
+
+            usuarioRepository.save(usuario);
+
+            throw new ContaBloqueadaException(
+                    "Número de tentativas excedido. Verificação bloqueada temporariamente"
+            );
+        }
+
+        usuarioRepository.save(usuario);
+
+        int tentativasRestantes = LIMITE_TENTATIVAS_VERIFICACAO - tentativas;
+        throw new CredenciaisInvalidasException(
+                "Código de verificação inválido. Você tem mais "
+                + tentativasRestantes
+                + " tentativa(s)"
+        );
+    }
     private void resetarTentativasLogin(Usuario usuario){
         usuario.setTentativaLogin(0);
         usuario.setLoginBloqueadoAte(null);
@@ -228,7 +352,7 @@ public class UsuarioService {
                 usuario.getTelefone()
         );
     }
-    private String gerarCodigoRecuperacao(){
+    private String gerarCodigo(){
         int geracaoNum = secureRandom.nextInt(1_000_000);
 
         return String.format("%06d", geracaoNum);
@@ -242,6 +366,17 @@ public class UsuarioService {
         usuario.setCodRecuperacaoBloqueadoAte(null);
 
         usuarioRepository.save(usuario);
+    }
+    private String normalizarEmail(String email){
+        return email.trim().toLowerCase(Locale.ROOT);
+    }
+    private void configurarVerificacaoDeConta(Usuario usuario, String codigo){
+        String codigoHash = passwordEncoder.encode(codigo);
+
+        usuario.setCodigoVerificacaoConta(codigoHash);
+        usuario.setCodVerificacaoExpiraEm(LocalDateTime.now().plusMinutes(MIN_EXPIRACAO_CODIGO));
+        usuario.setTentativasVerificacao(0);
+        usuario.setVerificacaoBloqueadaAte(null);
     }
 
 }

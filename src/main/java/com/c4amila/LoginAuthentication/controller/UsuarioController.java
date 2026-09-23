@@ -18,10 +18,21 @@ public class UsuarioController {
     private final UsuarioService usuarioService;
 
     @PostMapping("/cadastro")
-    public ResponseEntity<UsuarioResponseDTO> cadastrar(@Valid @RequestBody UsuarioCadastroRequestDTO requestDTO){
-        UsuarioResponseDTO responseDTO = usuarioService.cadastrar(requestDTO);
-
+    public ResponseEntity<UsuarioCadastroResponseDTO> cadastrar(@Valid @RequestBody UsuarioCadastroRequestDTO requestDTO){
+        UsuarioCadastroResponseDTO responseDTO = usuarioService.cadastrar(requestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+    }
+
+    @PostMapping("/verificar-conta")
+    public ResponseEntity<String> verificarConta(@Valid @RequestBody VerificacaoContaDTO dto){
+        usuarioService.verificarConta(dto);
+        return ResponseEntity.ok("Conta verificada com sucesso!");
+    }
+
+    @PostMapping("/reenviar-codigo-verificacao")
+    public ResponseEntity<String> reenviarCodigo(@Valid @RequestBody SolicitacaoCodigoDTO dto){
+        usuarioService.reenviarCodigoVerificacao(dto);
+        return ResponseEntity.ok("Se houver uma conta existente com este e-mail, um novo código será enviado.");
     }
 
     @PostMapping("/login")
@@ -32,7 +43,7 @@ public class UsuarioController {
     }
 
     @PostMapping("/recuperar-senha")
-    public ResponseEntity<String> soliticarRecuperacao(@Valid @RequestBody RecuperacaoSolicitacaoDTO dto){
+    public ResponseEntity<String> soliticarRecuperacao(@Valid @RequestBody SolicitacaoCodigoDTO dto){
         usuarioService.solicitarRecuperacaoSenha(dto);
         return ResponseEntity.ok("Se existir uma conta associada a este e-mail, enviaremos as instruções para recuperação da senha.");
     }
