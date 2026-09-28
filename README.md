@@ -9,6 +9,7 @@ API REST desenvolvida com Java e Spring Boot para cadastro, autenticação e ger
 - **Comunicação:** Java Mail Sender
 - **Desenvolvimento e documentação:** Maven, Swagger/OpenAPI
 - **Testes:** JUnit + Mockito
+- **Infraestrutura:** Docker
 
 ---
 
