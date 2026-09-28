@@ -60,9 +60,8 @@ public class UsuarioController {
         return ResponseEntity.ok("Logout realizado com sucesso");
     }
 
-    //test
-    @GetMapping("/teste")
-    public ResponseEntity<UsuarioResponseDTO> dadosTeste(@AuthenticationPrincipal UsuarioDetails usuarioDetails){
+    @GetMapping("/perfil")
+    public ResponseEntity<UsuarioResponseDTO> exibirPerfil(@AuthenticationPrincipal UsuarioDetails usuarioDetails){
         var usuario = usuarioDetails.getUsuario();
 
         UsuarioResponseDTO responseDTO = new UsuarioResponseDTO(
