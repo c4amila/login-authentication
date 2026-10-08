@@ -135,7 +135,8 @@ public class UsuarioService {
     }
 
     public LoginResponseDTO autenticar(UsuarioLoginRequestDTO dto){
-        Usuario usuario = usuarioRepository.findByEmail(dto.getEmail())
+        String emailValidado = normalizarEmail(dto.getEmail());
+        Usuario usuario = usuarioRepository.findByEmail(emailValidado)
                 .orElseThrow(() -> new CredenciaisInvalidasException("E-mail ou senha inválido"));
 
         if(!Boolean.TRUE.equals(usuario.getContaVerificada())){
@@ -187,7 +188,8 @@ public class UsuarioService {
             throw new RequisicaoInvalidaException("As senhas não coincidem");
         }
 
-        Usuario usuario = usuarioRepository.findByEmail(dto.getEmail()).orElseThrow(
+        String emailValidado = normalizarEmail(dto.getEmail());
+        Usuario usuario = usuarioRepository.findByEmail(emailValidado).orElseThrow(
                 () -> new RequisicaoInvalidaException("Dados de recuperação inválidos")
         );
 
@@ -213,7 +215,8 @@ public class UsuarioService {
     }
 
     public void logout(LogoutDTO dto){
-        Usuario usuario = usuarioRepository.findByEmail(dto.getEmail())
+        String emailValidado = normalizarEmail(dto.getEmail());
+        Usuario usuario = usuarioRepository.findByEmail(emailValidado)
                 .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuário não encontrado"));
 
         // TODO: após implementar refresh token, adicionar revogação sessao/token
