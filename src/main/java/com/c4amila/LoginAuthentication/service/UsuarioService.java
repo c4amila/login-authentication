@@ -288,7 +288,7 @@ public class UsuarioService {
             throw new ContaBloqueadaException(
                     LIMITE_TENTATIVAS + " tentativas incorretas. " +
                             "Você está bloqueado por " +
-                            MINUTOS_BLOQUEIO + "5 minutos"
+                            MINUTOS_BLOQUEIO + " minutos"
             );
         }
 
