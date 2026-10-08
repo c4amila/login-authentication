@@ -118,6 +118,9 @@ public class UsuarioService {
         }
 
         Usuario usuario = usuarioOpt.get();
+        if(Boolean.TRUE.equals(usuario.getContaVerificada())){
+            return;
+        }
 
         String codigo = gerarCodigo();
         String codigoHash = passwordEncoder.encode(codigo);
