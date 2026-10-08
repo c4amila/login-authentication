@@ -172,7 +172,7 @@ public class UsuarioService {
         String codigoHash = passwordEncoder.encode(codigo);
 
         usuario.setCodigoRecuperacao(codigoHash);
-        usuario.setHorarioExpiracaoCodigo(LocalDateTime.now().plusMinutes(MIN_EXPIRACAO_CODIGO));
+        usuario.setCodRecuperacaoExpiraEm(LocalDateTime.now().plusMinutes(MIN_EXPIRACAO_CODIGO));
 
         usuarioRepository.save(usuario);
 
