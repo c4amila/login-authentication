@@ -33,14 +33,15 @@ Diagrama dos fluxos de login, cadastro e recuperação de senha
 ---
 
 ## Endpoints
-| Método | Rota                        | Autenticação | Descrição |
-|---|-----------------------------|---|---|
-| `POST` | `/usuarios/cadastro`        | Pública | Cadastra um novo usuário e envia código de verificação por e-mail |
-| `POST` | `/usuarios/verificar-conta` | Pública | Confirma a conta a partir do código enviado por e-mail |
-| `POST` | `/usuarios/login`           | Pública | Autentica o usuário e retorna o token JWT |
-| `POST` | `/usuarios/recuperar-senha` | Pública | Solicita o código de recuperação de senha por e-mail |
-| `POST` | `/usuarios/confirmar-senha` | Pública | Valida o código de recuperação e define a nova senha |
-| `POST` | `/usuarios/sair`            | Protegida | Realiza o logout |
+| Método | Rota                        | Autenticação | Descrição                                                                 |
+|---|-----------------------------|---|---------------------------------------------------------------------------|
+| `POST` | `/usuarios/cadastro`        | Pública | Cadastra um novo usuário e envia código de verificação por e-mail         |
+| `POST` | `/usuarios/verificar-conta` | Pública | Confirma a conta a partir do código enviado por e-mail                    |
+| `POST` | `/usuarios/reenviar-codigo-verificacao` | Pública | Reenvia código de verificação para conta ainda não verificada |            |
+| `POST` | `/usuarios/login`           | Pública | Autentica o usuário e retorna o token JWT                                 |
+| `POST` | `/usuarios/recuperar-senha` | Pública | Solicita o código de recuperação de senha por e-mail                      |
+| `POST` | `/usuarios/confirmar-senha` | Pública | Valida o código de recuperação e define a nova senha                      |
+| `POST` | `/usuarios/sair`            | Protegida | Realiza o logout                                                          |
 | `GET` | `/usuarios/perfil`          | Protegida | Retorna os dados do usuário autenticado (endpoint de demonstração do JWT) |
 
 > Rotas protegidas exigem o header `Authorization: Bearer <token>` obtido no login

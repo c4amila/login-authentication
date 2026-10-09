@@ -23,5 +23,7 @@ public class RecuperacaoConfirmacaoDTO {
     private String novaSenha;
 
     @NotBlank(message = "A confirmação da senha é obrigatória")
+    @Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%&*+=])(?=\\S+$).{8,}$",
+            message = "A senha deve conter pelo menos uma letra maiúscula, uma letra minúscula, um caractere especial (!@#$%&*+=) e no mínimo 8 carateres")
     private String confirmarNovaSenha;
 }

@@ -8,11 +8,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class UsuarioDetailsServiceTest {
     private UsuarioRepository usuarioRepository;
@@ -32,15 +32,22 @@ public class UsuarioDetailsServiceTest {
         Usuario usuario = new Usuario();
         usuario.setEmail(emailTeste);
         usuario.setSenha("senhaHash");
-        usuario.setEstaBloqueado(false);
+        usuario.setContaVerificada(true);
+        usuario.setLoginBloqueadoAte(null);
 
         when(usuarioRepository.findByEmail(emailTeste)).thenReturn(Optional.of(usuario));
+
         UserDetails userDetails = usuarioDetailsService.loadUserByUsername(emailTeste);
 
         assertNotNull(userDetails);
+
         assertEquals(emailTeste, userDetails.getUsername());
         assertEquals("senhaHash", userDetails.getPassword());
         assertTrue(userDetails.isAccountNonExpired());
+        assertTrue(userDetails.isAccountNonLocked());
+        assertTrue(userDetails.isEnabled());
+
+        verify(usuarioRepository, times(1)).findByEmail(emailTeste);
     }
 
     @Test
@@ -51,12 +58,15 @@ public class UsuarioDetailsServiceTest {
         Usuario usuario = new Usuario();
         usuario.setEmail(emailTeste);
         usuario.setSenha("senhaHash");
-        usuario.setEstaBloqueado(true);
+        usuario.setContaVerificada(true);
+        usuario.setLoginBloqueadoAte(LocalDateTime.now().plusMinutes(5));
 
         when(usuarioRepository.findByEmail(emailTeste)).thenReturn(Optional.of(usuario));
+
         UserDetails userDetails = usuarioDetailsService.loadUserByUsername(emailTeste);
 
         assertFalse(userDetails.isAccountNonLocked());
+        assertTrue(userDetails.isEnabled());
     }
 
     @Test
@@ -66,7 +76,32 @@ public class UsuarioDetailsServiceTest {
 
         when(usuarioRepository.findByEmail(emailTeste)).thenReturn(Optional.empty());
 
-        assertThrows(UsernameNotFoundException.class,
+        UsernameNotFoundException exc = assertThrows(UsernameNotFoundException.class,
                 () -> usuarioDetailsService.loadUserByUsername(emailTeste));
+
+        assertEquals("Usuario não encontrado.", exc.getMessage());
+
+        verify(usuarioRepository, times(1)).findByEmail(emailTeste);
+    }
+
+    @Test
+    @DisplayName("Deve normalizar o e-mail antes de buscar o usuario")
+    void loadUserByUsernameComEmailNormalizado(){
+        String emailTeste = "CAMILA@TESTE.COM";
+        String emailValido = "camila@teste.com";
+
+        Usuario usuario = new Usuario();
+        usuario.setEmail(emailValido);
+        usuario.setSenha("senhaHash");
+        usuario.setContaVerificada(true);
+
+        when(usuarioRepository.findByEmail(emailValido)).thenReturn(Optional.of(usuario));
+
+        UserDetails userDetails = usuarioDetailsService.loadUserByUsername(emailTeste);
+
+        assertEquals(emailValido, userDetails.getUsername());
+
+        verify(usuarioRepository, times(1)).findByEmail(emailValido);
+        verify(usuarioRepository, never()).findByEmail(emailTeste);
     }
 }

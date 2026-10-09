@@ -118,6 +118,9 @@ public class UsuarioService {
         }
 
         Usuario usuario = usuarioOpt.get();
+        if(Boolean.TRUE.equals(usuario.getContaVerificada())){
+            return;
+        }
 
         String codigo = gerarCodigo();
         String codigoHash = passwordEncoder.encode(codigo);
@@ -132,7 +135,8 @@ public class UsuarioService {
     }
 
     public LoginResponseDTO autenticar(UsuarioLoginRequestDTO dto){
-        Usuario usuario = usuarioRepository.findByEmail(dto.getEmail())
+        String emailValidado = normalizarEmail(dto.getEmail());
+        Usuario usuario = usuarioRepository.findByEmail(emailValidado)
                 .orElseThrow(() -> new CredenciaisInvalidasException("E-mail ou senha inválido"));
 
         if(!Boolean.TRUE.equals(usuario.getContaVerificada())){
@@ -172,7 +176,7 @@ public class UsuarioService {
         String codigoHash = passwordEncoder.encode(codigo);
 
         usuario.setCodigoRecuperacao(codigoHash);
-        usuario.setHorarioExpiracaoCodigo(LocalDateTime.now().plusMinutes(MIN_EXPIRACAO_CODIGO));
+        usuario.setCodRecuperacaoExpiraEm(LocalDateTime.now().plusMinutes(MIN_EXPIRACAO_CODIGO));
 
         usuarioRepository.save(usuario);
 
@@ -184,7 +188,8 @@ public class UsuarioService {
             throw new RequisicaoInvalidaException("As senhas não coincidem");
         }
 
-        Usuario usuario = usuarioRepository.findByEmail(dto.getEmail()).orElseThrow(
+        String emailValidado = normalizarEmail(dto.getEmail());
+        Usuario usuario = usuarioRepository.findByEmail(emailValidado).orElseThrow(
                 () -> new RequisicaoInvalidaException("Dados de recuperação inválidos")
         );
 
@@ -210,7 +215,8 @@ public class UsuarioService {
     }
 
     public void logout(LogoutDTO dto){
-        Usuario usuario = usuarioRepository.findByEmail(dto.getEmail())
+        String emailValidado = normalizarEmail(dto.getEmail());
+        Usuario usuario = usuarioRepository.findByEmail(emailValidado)
                 .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuário não encontrado"));
 
         // TODO: após implementar refresh token, adicionar revogação sessao/token
@@ -282,7 +288,7 @@ public class UsuarioService {
             throw new ContaBloqueadaException(
                     LIMITE_TENTATIVAS + " tentativas incorretas. " +
                             "Você está bloqueado por " +
-                            MINUTOS_BLOQUEIO + "5 minutos"
+                            MINUTOS_BLOQUEIO + " minutos"
             );
         }
 

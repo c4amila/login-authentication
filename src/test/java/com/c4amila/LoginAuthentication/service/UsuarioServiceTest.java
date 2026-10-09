@@ -6,7 +6,6 @@ import com.c4amila.LoginAuthentication.dto.UsuarioLoginRequestDTO;
 import com.c4amila.LoginAuthentication.exception.ContaBloqueadaException;
 import com.c4amila.LoginAuthentication.exception.CredenciaisInvalidasException;
 import com.c4amila.LoginAuthentication.exception.EmailCadastradoException;
-import com.c4amila.LoginAuthentication.exception.RequisicaoInvalidaException;
 import com.c4amila.LoginAuthentication.model.Usuario;
 import com.c4amila.LoginAuthentication.repository.UsuarioRepository;
 import com.c4amila.LoginAuthentication.security.TokenService;
@@ -15,11 +14,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class UsuarioServiceTest {
@@ -46,11 +45,13 @@ public class UsuarioServiceTest {
 
         UsuarioCadastroRequestDTO dto = new UsuarioCadastroRequestDTO();
         dto.setNomeCompleto("Camila Ferreira");
+        dto.setDataNascimento(LocalDate.of(2003, 8, 1));
         dto.setEmail(emailTeste);
         dto.setTelefone("11999998888");
         dto.setSenha("NovaSenha@123");
 
-        when(usuarioRepository.findByEmail(emailTeste)).thenReturn(Optional.of(new Usuario()));
+        when(usuarioRepository.existsByEmail(emailTeste)).thenReturn(true);
+
         EmailCadastradoException exc = assertThrows(EmailCadastradoException.class,
                 () -> usuarioService.cadastrar(dto));
 
@@ -79,54 +80,84 @@ public class UsuarioServiceTest {
     @DisplayName("Deve lançar exceção ao tentar autenticar com senha errada")
     void autenticarComSenhaErrada(){
         String emailTeste = "camila@teste.com";
+        String senhaErrada = "SenhaErrada@2026";
 
         UsuarioLoginRequestDTO dto = new UsuarioLoginRequestDTO();
         dto.setEmail(emailTeste);
-        dto.setSenha("NovaSenha@123");
+        dto.setSenha(senhaErrada);
 
         Usuario usuario = new Usuario();
         usuario.setEmail(emailTeste);
         usuario.setSenha("senhaHash");
-        usuario.setTentativaSenha(0);
-        usuario.setEstaBloqueado(false);
+        usuario.setContaVerificada(true);
+        usuario.setTentativaLogin(0);
+        usuario.setLoginBloqueadoAte(null);
 
         when(usuarioRepository.findByEmail(emailTeste)).thenReturn(Optional.of(usuario));
-        when(passwordEncoder.matches("SenhaErrada@123", "senhaHash")).thenReturn(false);
+
+        when(passwordEncoder.matches(senhaErrada, "senhaHash")).thenReturn(false);
 
         CredenciaisInvalidasException exc = assertThrows(CredenciaisInvalidasException.class,
                 () -> usuarioService.autenticar(dto));
 
         assertEquals("E-mail ou senha inválidos. Você tem mais 4 tentativa(s)", exc.getMessage());
+
+        assertEquals(1, usuario.getTentativaLogin());
+        assertNull(usuario.getLoginBloqueadoAte());
+
+        verify(usuarioRepository, times(1)).save(usuario);
+        verifyNoInteractions(tokenService);
     }
 
     @Test
     @DisplayName("Deve lançar exceção ao bloquear a conta após de 5 tentativas erradas de senha")
     void autenticarBloqueioDeContaNaQuintaTentativaErrada(){
         String emailTeste = "camila@teste.com";
+        String senhaErrada = "SenhaErrada@2026";
 
         UsuarioLoginRequestDTO dto = new UsuarioLoginRequestDTO();
         dto.setEmail(emailTeste);
-        dto.setSenha("SenhaErrada@123");
+        dto.setSenha(senhaErrada);
 
         Usuario usuario = new Usuario();
         usuario.setEmail(emailTeste);
         usuario.setSenha("senhaHash");
-        usuario.setTentativaSenha(4);
-        usuario.setEstaBloqueado(false);
+        usuario.setContaVerificada(true);
+        usuario.setTentativaLogin(4);
+        usuario.setLoginBloqueadoAte(null);
 
         when(usuarioRepository.findByEmail(emailTeste)).thenReturn(Optional.of(usuario));
-        when(passwordEncoder.matches("SenhaErrada@123", "senhaHash")).thenReturn(false);
 
-        assertThrows(ContaBloqueadaException.class,
-                () -> usuarioService.autenticar(dto));
+        when(passwordEncoder.matches(senhaErrada, "senhaHash")).thenReturn(false);
 
-        assertEquals(Boolean.TRUE, usuario.getEstaBloqueado());
-        verify(usuarioRepository, atLeastOnce()).save(usuario);
+        LocalDateTime antes = LocalDateTime.now();
+
+        assertThrows(
+                ContaBloqueadaException.class,
+                () -> usuarioService.autenticar(dto)
+        );
+
+        LocalDateTime depois = LocalDateTime.now();
+
+        LocalDateTime bloqueadoAte = usuario.getLoginBloqueadoAte();
+
+        assertNotNull(bloqueadoAte);
+
+        assertTrue(
+                !bloqueadoAte.isBefore(antes.plusMinutes(5))
+                        && !bloqueadoAte.isAfter(depois.plusMinutes(5)),
+                "O bloqueio deve expirar 5 minutos após a tentativa"
+        );
+
+        assertEquals(0, usuario.getTentativaLogin());
+
+        verify(usuarioRepository, times(1)).save(usuario);
+        verifyNoInteractions(tokenService);
     }
 
     @Test
     @DisplayName("Deve lançar exceção ao tentar logar com a conta bloqueada")
-    void autenticarComContaContaBloqueada(){
+    void autenticarComContaBloqueada(){
         String emailTeste = "camila@teste.com";
 
         UsuarioLoginRequestDTO dto = new UsuarioLoginRequestDTO();
@@ -136,39 +167,52 @@ public class UsuarioServiceTest {
         Usuario usuario = new Usuario();
         usuario.setEmail(emailTeste);
         usuario.setSenha("senhaHash");
-        usuario.setEstaBloqueado(true);
-        usuario.setHorarioBloqueio(LocalDateTime.now());
+        usuario.setContaVerificada(true);
+        usuario.setTentativaLogin(0);
+        usuario.setLoginBloqueadoAte(LocalDateTime.now().plusMinutes(5));
 
         when(usuarioRepository.findByEmail(emailTeste)).thenReturn(Optional.of(usuario));
         assertThrows(ContaBloqueadaException.class,
                 () -> usuarioService.autenticar(dto));
+
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+        verifyNoInteractions(tokenService);
     }
 
     @Test
     @DisplayName("Deve lançar exceção quando o código de verificação for inválido")
     void lancarExcecaoAoValidarRecuperacaoComCodigoInvalido(){
         String emailTeste = "camila@teste.com";
+        String codigoInvalido = "000000";
+        String codigoHash = "codigoHash";
 
         RecuperacaoConfirmacaoDTO dto = new RecuperacaoConfirmacaoDTO();
         dto.setEmail(emailTeste);
-        dto.setCodigo("000000");
+        dto.setCodigo(codigoInvalido);
         dto.setNovaSenha("NovaSenha@123");
         dto.setConfirmarNovaSenha("NovaSenha@123");
 
         Usuario usuario = new Usuario();
         usuario.setEmail(emailTeste);
-        usuario.setCodigoRecuperacao("123456");
-        usuario.setTentativaSenha(0);
-        usuario.setHorarioGeracaoCodigo(LocalDateTime.now());
+        usuario.setSenha("senhaHash");
+        usuario.setCodigoRecuperacao(codigoInvalido);
+        usuario.setCodRecuperacaoExpiraEm(LocalDateTime.now().plusMinutes(5));
+        usuario.setTentativasRecuperacao(0);
+        usuario.setCodRecuperacaoBloqueadoAte(null);
 
         when(usuarioRepository.findByEmail(emailTeste)).thenReturn(Optional.of(usuario));
+
+        when(passwordEncoder.matches(codigoInvalido, codigoHash)).thenReturn(false);
+
         CredenciaisInvalidasException exc = assertThrows(CredenciaisInvalidasException.class,
-                () -> {usuarioService.validarRecuperacao(dto);
-        });
+                () -> usuarioService.validarRecuperacao(dto));
 
         assertEquals("Código de verificação inválido. Você tem mais 4 tentativas", exc.getMessage());
-        assertEquals(1, usuario.getTentativaSenha());
+        assertEquals(1, usuario.getTentativasRecuperacao());
+        assertEquals("senhaHash", usuario.getSenha());
+
         verify(usuarioRepository, times(1)).save(usuario);
+        verify(passwordEncoder, never()).encode(anyString());
     }
 
 }
