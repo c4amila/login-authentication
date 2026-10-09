@@ -79,7 +79,7 @@ public class UsuarioDetailsServiceTest {
         UsernameNotFoundException exc = assertThrows(UsernameNotFoundException.class,
                 () -> usuarioDetailsService.loadUserByUsername(emailTeste));
 
-        assertEquals("Usuário não encontrado.", exc.getMessage());
+        assertEquals("Usuario não encontrado.", exc.getMessage());
 
         verify(usuarioRepository, times(1)).findByEmail(emailTeste);
     }
@@ -91,7 +91,7 @@ public class UsuarioDetailsServiceTest {
         String emailValido = "camila@teste.com";
 
         Usuario usuario = new Usuario();
-        usuario.setEmail(emailTeste);
+        usuario.setEmail(emailValido);
         usuario.setSenha("senhaHash");
         usuario.setContaVerificada(true);
 
