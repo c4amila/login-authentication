@@ -130,17 +130,28 @@ public class UsuarioServiceTest {
 
         when(passwordEncoder.matches(senhaErrada, "senhaHash")).thenReturn(false);
 
-        assertThrows(ContaBloqueadaException.class,
-                () -> usuarioService.autenticar(dto));
+        LocalDateTime antes = LocalDateTime.now();
 
-        LocalDateTime now = LocalDateTime.now();
-        assertFalse(usuario.getLoginBloqueadoAte().isBefore(now.plusMinutes(5)));
+        assertThrows(
+                ContaBloqueadaException.class,
+                () -> usuarioService.autenticar(dto)
+        );
 
-        assertFalse(usuario.getLoginBloqueadoAte().isAfter(now.plusMinutes(5)));
+        LocalDateTime depois = LocalDateTime.now();
+
+        LocalDateTime bloqueadoAte = usuario.getLoginBloqueadoAte();
+
+        assertNotNull(bloqueadoAte);
+
+        assertTrue(
+                !bloqueadoAte.isBefore(antes.plusMinutes(5))
+                        && !bloqueadoAte.isAfter(depois.plusMinutes(5)),
+                "O bloqueio deve expirar 5 minutos após a tentativa"
+        );
 
         assertEquals(0, usuario.getTentativaLogin());
 
-        verify(usuarioRepository, atLeastOnce()).save(usuario);
+        verify(usuarioRepository, times(1)).save(usuario);
         verifyNoInteractions(tokenService);
     }
 
@@ -191,11 +202,10 @@ public class UsuarioServiceTest {
 
         when(usuarioRepository.findByEmail(emailTeste)).thenReturn(Optional.of(usuario));
 
-        when(passwordEncoder.matches(codigoInvalido, codigoHash));
+        when(passwordEncoder.matches(codigoInvalido, codigoHash)).thenReturn(false);
 
         CredenciaisInvalidasException exc = assertThrows(CredenciaisInvalidasException.class,
-                () -> {usuarioService.validarRecuperacao(dto);
-        });
+                () -> usuarioService.validarRecuperacao(dto));
 
         assertEquals("Código de verificação inválido. Você tem mais 4 tentativas", exc.getMessage());
         assertEquals(1, usuario.getTentativasRecuperacao());
