@@ -1,10 +1,19 @@
 package com.c4amila.LoginAuthentication.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Entity
+@NoArgsConstructor
+@Getter
+@Setter
+@Table(name = "sessoes")
 public class Sessao {
 
     @Id
