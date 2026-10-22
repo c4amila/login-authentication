@@ -33,7 +33,7 @@ public class Sessao {
     @Column(name = "revogada_em", nullable = false)
     private LocalDateTime revogadaEm;
 
-    public Boolean estaAtiva(){
-        return revogadaEm == null && expiraEm.isAfter(LocalDateTime.now());
+    public Boolean estaAtiva(LocalDateTime now){
+        return revogadaEm == null && expiraEm.isAfter(now);
     }
 }
