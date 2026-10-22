@@ -36,7 +36,7 @@ public class SessaoService {
     public boolean validarSessao(UUID id){
         LocalDateTime now = LocalDateTime.now();
         return sessaoRepository.findById(id)
-                .map(sessao -> sessao.estaAtiva())
+                .map(sessao -> sessao.estaAtiva(now))
                 .orElse(false);
     }
 
