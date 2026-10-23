@@ -2,6 +2,7 @@ package com.c4amila.LoginAuthentication.service;
 
 import com.c4amila.LoginAuthentication.dto.*;
 import com.c4amila.LoginAuthentication.exception.*;
+import com.c4amila.LoginAuthentication.model.Sessao;
 import com.c4amila.LoginAuthentication.model.Usuario;
 import com.c4amila.LoginAuthentication.repository.UsuarioRepository;
 import com.c4amila.LoginAuthentication.security.TokenService;
@@ -21,6 +22,7 @@ public class UsuarioService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final TokenService tokenService;
+    private final SessaoService sessaoService;
     private static final SecureRandom secureRandom = new SecureRandom();
 
     private static final int LIMITE_TENTATIVAS = 5;
@@ -31,11 +33,17 @@ public class UsuarioService {
     private static final int MINUTOS_BLOQUEIO_VERIFICACAO = 5;
     private static final int MIN_EXPIRACAO_CODIGO = 5;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, EmailService emailService, TokenService tokenService) {
+    public UsuarioService(
+            UsuarioRepository usuarioRepository,
+            PasswordEncoder passwordEncoder,
+            EmailService emailService,
+            TokenService tokenService,
+            SessaoService sessaoService) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
         this.tokenService = tokenService;
+        this.sessaoService = sessaoService;
     }
 
     public UsuarioCadastroResponseDTO cadastrar(UsuarioCadastroRequestDTO dto){
@@ -156,7 +164,9 @@ public class UsuarioService {
         }
         resetarTentativasLogin(usuario);
 
-        String token = tokenService.gerarToken(usuario.getEmail());
+        Sessao sessao = sessaoService.criarSessao(usuario);
+
+        String token = tokenService.gerarToken(usuario.getEmail(), sessao.getId());
 
         UsuarioResponseDTO usuarioResponseDTO = criarUsuarioResponseDTO(usuario);
 
