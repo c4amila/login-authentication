@@ -5,6 +5,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
@@ -12,6 +14,7 @@ public class TokenServiceTest {
 
     private TokenService tokenService;
     private static final String CHAVE_TESTE = "jMS?%/uC+<lkwqUR<U*]8c2|Qtm#,v(REsr{UETHsDL";
+    private static final UUID sessaoId = UUID.randomUUID();
 
     @BeforeEach
     void setUp(){
@@ -25,7 +28,7 @@ public class TokenServiceTest {
     void gerarTokenEExtrairEmail(){
         String emailTest = "camila@test.com";
 
-        String token = tokenService.gerarToken(emailTest);
+        String token = tokenService.gerarToken(emailTest, sessaoId);
         assertNotNull(token);
         assertEquals(emailTest, tokenService.extrairEmail(token));
         assertTrue(tokenService.isTokenValido(token));
@@ -34,7 +37,7 @@ public class TokenServiceTest {
     @Test
     @DisplayName("Deve invalidar token adulterado")
     void invalidarTokenAdulterado(){
-        String token = tokenService.gerarToken("camila@teste.com");
+        String token = tokenService.gerarToken("camila@teste.com", sessaoId);
 
         String tokenInvalido = token.substring(0, token.length() - 1) + "x";
 
@@ -45,7 +48,7 @@ public class TokenServiceTest {
     @DisplayName("Deve invalidar um token expirado")
     void invalidarTokenExpirado(){
         ReflectionTestUtils.setField(tokenService, "expMs", -10_000L);
-        String tokenExpirado = tokenService.gerarToken("camila@test.com");
+        String tokenExpirado = tokenService.gerarToken("camila@test.com", sessaoId);
 
         assertFalse(tokenService.isTokenValido(tokenExpirado));
     }
@@ -53,7 +56,7 @@ public class TokenServiceTest {
     @Test
     @DisplayName("Deve invalidar um token assinado com chave diferente")
     void invalidarTokenComChaveDiferente(){
-        String token = tokenService.gerarToken("camila@teste.com");
+        String token = tokenService.gerarToken("camila@teste.com", sessaoId);
 
         TokenService tokenService2 = new TokenService();
         ReflectionTestUtils.setField(tokenService2, "secret", "chave-diferente");
