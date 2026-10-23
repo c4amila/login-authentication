@@ -33,9 +33,9 @@ public class SessaoService {
     }
 
     @Transactional(readOnly = true)
-    public boolean validarSessao(UUID id){
+    public boolean validarSessao(UUID id, String email){
         LocalDateTime now = LocalDateTime.now();
-        return sessaoRepository.findById(id)
+        return sessaoRepository.findByIdAndUsuarioEmail(id, email)
                 .map(sessao -> sessao.estaAtiva(now))
                 .orElse(false);
     }
