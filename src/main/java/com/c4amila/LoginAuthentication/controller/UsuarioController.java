@@ -1,7 +1,9 @@
 package com.c4amila.LoginAuthentication.controller;
 
 import com.c4amila.LoginAuthentication.dto.*;
+import com.c4amila.LoginAuthentication.security.TokenService;
 import com.c4amila.LoginAuthentication.security.UsuarioDetails;
+import com.c4amila.LoginAuthentication.service.SessaoService;
 import com.c4amila.LoginAuthentication.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,12 +12,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/usuarios")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
+    private final SessaoService sessaoService;
+    private final TokenService tokenService;
 
     @PostMapping("/cadastro")
     public ResponseEntity<UsuarioCadastroResponseDTO> cadastrar(@Valid @RequestBody UsuarioCadastroRequestDTO requestDTO){
@@ -55,8 +61,13 @@ public class UsuarioController {
     }
 
     @PostMapping("/sair")
-    public ResponseEntity<String> logout(@Valid @RequestBody LogoutDTO dto){
-        usuarioService.logout(dto);
+    public ResponseEntity<String> logout(@RequestHeader("Authorization") String authorization,
+                                         @AuthenticationPrincipal UsuarioDetails usuarioDetails){
+        String token = authorization.substring(7);
+        UUID sessaoId = tokenService.extrairSessao(token);
+
+        sessaoService.revogarSessao(sessaoId, usuarioDetails.getUsername());
+
         return ResponseEntity.ok("Logout realizado com sucesso");
     }
 
