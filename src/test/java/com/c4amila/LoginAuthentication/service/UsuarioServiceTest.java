@@ -120,6 +120,8 @@ public class UsuarioServiceTest {
 
         assertEquals("E-mail ou senha inválido", exc.getMessage());
 
+        verifyNoInteractions(sessaoService);
+        verify(tokenService, never()).gerarToken(anyString(), any(UUID.class));
     }
 
     @Test
