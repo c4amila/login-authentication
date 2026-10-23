@@ -37,9 +37,18 @@ public class TokenServiceTest {
     @Test
     @DisplayName("Deve invalidar token adulterado")
     void invalidarTokenAdulterado(){
+        UUID sessaoId = UUID.randomUUID();
+
         String token = tokenService.gerarToken("camila@teste.com", sessaoId);
 
-        String tokenInvalido = token.substring(0, token.length() - 1) + "x";
+        String[] partes = token.split("\\.");
+        String payload = partes[1];
+        char primeiroCaract = payload.charAt(0);
+
+        char caractereAdulterado = primeiroCaract == 'A' ? 'B' : 'A';
+        String payloadAdulterado = caractereAdulterado + payload.substring(1);
+
+        String tokenInvalido = partes[0] + payloadAdulterado + "." + partes[2];
 
         assertFalse(tokenService.isTokenValido(tokenInvalido));
     }
