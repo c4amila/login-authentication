@@ -91,7 +91,7 @@ public class UsuarioServiceTest {
 
         when(usuarioRepository.findByEmail(emailTeste)).thenReturn(Optional.of(usuario));
 
-        when(passwordEncoder.matches("Senha@123", "senhaHash")).thenReturn(true);
+        when(passwordEncoder.matches("NovaSenha@123", "senhaHash")).thenReturn(true);
 
         when(sessaoService.criarSessao(usuario)).thenReturn(sessao);
 
@@ -153,6 +153,33 @@ public class UsuarioServiceTest {
 
         verify(usuarioRepository, times(1)).save(usuario);
         verifyNoInteractions(tokenService);
+    }
+
+    @Test
+    @DisplayName("Não criar sessão quando a senha estiver incorreta")
+    void naoCriarSessaoComSenhaIncorreta(){
+        String emailTeste = "camila@teste.com";
+        String senhaErrada = "SenhaErrada@2026";
+
+        UsuarioLoginRequestDTO dto = new UsuarioLoginRequestDTO();
+        dto.setEmail(emailTeste);
+        dto.setSenha(senhaErrada);
+
+        Usuario usuario = new Usuario();
+        usuario.setEmail(emailTeste);
+        usuario.setSenha("senhaHash");
+        usuario.setContaVerificada(true);
+        usuario.setTentativaLogin(0);
+
+        when(usuarioRepository.findByEmail(emailTeste)).thenReturn(Optional.of(usuario));
+
+        when(passwordEncoder.matches(senhaErrada, "senhaHash")).thenReturn(false);
+
+        CredenciaisInvalidasException exc = assertThrows(CredenciaisInvalidasException.class,
+                () -> usuarioService.autenticar(dto));
+
+        verify(sessaoService, never()).criarSessao(any(Usuario.class));
+        verify(tokenService, never()).gerarToken(anyString(), any(UUID.class));
     }
 
     @Test
