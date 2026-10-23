@@ -224,13 +224,13 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
-    public void logout(LogoutDTO dto){
-        String emailValidado = normalizarEmail(dto.getEmail());
-        Usuario usuario = usuarioRepository.findByEmail(emailValidado)
-                .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuário não encontrado"));
-
-        // TODO: após implementar refresh token, adicionar revogação sessao/token
-    }
+//    public void logout(LogoutDTO dto){
+//        String emailValidado = normalizarEmail(dto.getEmail());
+//        Usuario usuario = usuarioRepository.findByEmail(emailValidado)
+//                .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuário não encontrado"));
+//
+//        // TODO: após implementar refresh token, adicionar revogação sessao/token
+//    }
 
 
     //--------------------
