@@ -41,8 +41,8 @@ public class SessaoService {
     }
 
     @Transactional
-    public void revogarSessao(UUID id){
-        Sessao sessao = sessaoRepository.findById(id)
+    public void revogarSessao(UUID id, String email){
+        Sessao sessao = sessaoRepository.findByIdAndUsuarioEmail(id, email)
                 .orElseThrow(() ->
                         new IllegalArgumentException("Sessão não encontrada")
                         );
