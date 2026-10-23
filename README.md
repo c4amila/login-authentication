@@ -91,9 +91,7 @@ src/main/java/com/c4amila/LoginAuthentication
 ## Melhorias futuras
 - Refresh token
 - Rate limiting
-- Revogação de token no logout
 - Roles/perfis de acesso
-- Maior expansão nos testes unitários e de integração
 - Observabilidade e logging
 
 ## ⚙️ Como executar o projeto

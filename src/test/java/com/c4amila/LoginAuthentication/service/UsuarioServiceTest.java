@@ -1,11 +1,13 @@
 package com.c4amila.LoginAuthentication.service;
 
+import com.c4amila.LoginAuthentication.dto.LoginResponseDTO;
 import com.c4amila.LoginAuthentication.dto.RecuperacaoConfirmacaoDTO;
 import com.c4amila.LoginAuthentication.dto.UsuarioCadastroRequestDTO;
 import com.c4amila.LoginAuthentication.dto.UsuarioLoginRequestDTO;
 import com.c4amila.LoginAuthentication.exception.ContaBloqueadaException;
 import com.c4amila.LoginAuthentication.exception.CredenciaisInvalidasException;
 import com.c4amila.LoginAuthentication.exception.EmailCadastradoException;
+import com.c4amila.LoginAuthentication.model.Sessao;
 import com.c4amila.LoginAuthentication.model.Usuario;
 import com.c4amila.LoginAuthentication.repository.UsuarioRepository;
 import com.c4amila.LoginAuthentication.security.TokenService;
@@ -17,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -27,6 +30,7 @@ public class UsuarioServiceTest {
     private EmailService emailService;
     private PasswordEncoder passwordEncoder;
     private TokenService tokenService;
+    private SessaoService sessaoService;
 
     @BeforeEach
     void setUp(){
@@ -34,8 +38,15 @@ public class UsuarioServiceTest {
         this.passwordEncoder = mock(PasswordEncoder.class);
         this.emailService = mock(EmailService.class);
         this.tokenService = mock(TokenService.class);
+        this.sessaoService = mock(SessaoService.class);
 
-        this.usuarioService = new UsuarioService(usuarioRepository, passwordEncoder, emailService, tokenService);
+        this.usuarioService = new UsuarioService(
+                usuarioRepository,
+                passwordEncoder,
+                emailService,
+                tokenService,
+                sessaoService
+        );
     }
 
     @Test
@@ -60,6 +71,41 @@ public class UsuarioServiceTest {
     }
 
     @Test
+    @DisplayName("Ao autenticar, deve criar sessão e gerar o JWT corretamente")
+    void autenticarComSucesso(){
+        String emailTeste = "camila@teste.com";
+        UUID sessaoId = UUID.randomUUID();
+
+        UsuarioLoginRequestDTO dto = new UsuarioLoginRequestDTO();
+        dto.setEmail("CAMILA@TESTE.COM");
+        dto.setSenha("NovaSenha@123");
+
+        Usuario usuario = new Usuario();
+        usuario.setEmail(emailTeste);
+        usuario.setSenha("senhaHash");
+        usuario.setContaVerificada(true);
+        usuario.setTentativaLogin(0);
+
+        Sessao sessao = new Sessao();
+        sessao.setId(sessaoId);
+
+        when(usuarioRepository.findByEmail(emailTeste)).thenReturn(Optional.of(usuario));
+
+        when(passwordEncoder.matches("NovaSenha@123", "senhaHash")).thenReturn(true);
+
+        when(sessaoService.criarSessao(usuario)).thenReturn(sessao);
+
+        when(tokenService.gerarToken(emailTeste, sessaoId)).thenReturn("jwt-teste");
+
+        LoginResponseDTO response = usuarioService.autenticar(dto);
+        assertNotNull(response);
+        assertEquals("jwt-teste", response.getToken());
+
+        verify(sessaoService, times(1)).criarSessao(usuario);
+        verify(tokenService, times(1)).gerarToken(emailTeste, sessaoId);
+    }
+
+    @Test
     @DisplayName("Deve lançar exceção ao tentar autenticar com um e-mail que não existe")
     void autenticarComEmailInexistente(){
         String emailNaoExiste = "123@teste.com";
@@ -74,6 +120,8 @@ public class UsuarioServiceTest {
 
         assertEquals("E-mail ou senha inválido", exc.getMessage());
 
+        verifyNoInteractions(sessaoService);
+        verify(tokenService, never()).gerarToken(anyString(), any(UUID.class));
     }
 
     @Test
@@ -107,6 +155,33 @@ public class UsuarioServiceTest {
 
         verify(usuarioRepository, times(1)).save(usuario);
         verifyNoInteractions(tokenService);
+    }
+
+    @Test
+    @DisplayName("Não criar sessão quando a senha estiver incorreta")
+    void naoCriarSessaoComSenhaIncorreta(){
+        String emailTeste = "camila@teste.com";
+        String senhaErrada = "SenhaErrada@2026";
+
+        UsuarioLoginRequestDTO dto = new UsuarioLoginRequestDTO();
+        dto.setEmail(emailTeste);
+        dto.setSenha(senhaErrada);
+
+        Usuario usuario = new Usuario();
+        usuario.setEmail(emailTeste);
+        usuario.setSenha("senhaHash");
+        usuario.setContaVerificada(true);
+        usuario.setTentativaLogin(0);
+
+        when(usuarioRepository.findByEmail(emailTeste)).thenReturn(Optional.of(usuario));
+
+        when(passwordEncoder.matches(senhaErrada, "senhaHash")).thenReturn(false);
+
+        CredenciaisInvalidasException exc = assertThrows(CredenciaisInvalidasException.class,
+                () -> usuarioService.autenticar(dto));
+
+        verify(sessaoService, never()).criarSessao(any(Usuario.class));
+        verify(tokenService, never()).gerarToken(anyString(), any(UUID.class));
     }
 
     @Test

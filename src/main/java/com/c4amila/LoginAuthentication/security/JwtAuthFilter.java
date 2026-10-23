@@ -1,6 +1,7 @@
 package com.c4amila.LoginAuthentication.security;
 
 
+import com.c4amila.LoginAuthentication.service.SessaoService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.UUID;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -21,10 +23,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final TokenService tokenService;
     private final UsuarioDetailsService usuarioDetailsService;
+    private final SessaoService sessaoService;
 
-    public JwtAuthFilter(TokenService tokenService, UsuarioDetailsService usuarioDetailsService) {
+    public JwtAuthFilter(TokenService tokenService, UsuarioDetailsService usuarioDetailsService, SessaoService sessaoService) {
         this.tokenService = tokenService;
         this.usuarioDetailsService = usuarioDetailsService;
+        this.sessaoService = sessaoService;
     }
 
     @Override
@@ -33,16 +37,27 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         if (token != null && tokenService.isTokenValido(token) &&
                 SecurityContextHolder.getContext().getAuthentication() == null){
-            String email = tokenService.extrairEmail(token);
+            try{
+                String email = tokenService.extrairEmail(token);
+                UUID sessaoId = tokenService.extrairSessao(token);
 
-            UserDetails userDetails = usuarioDetailsService.loadUserByUsername(email);
+                if (sessaoService.validarSessao(sessaoId, email)){
+                    UserDetails userDetails = usuarioDetailsService.loadUserByUsername(email);
+                    if (userDetails.isEnabled() && userDetails.getUsername().equals(email)){
 
-            if (userDetails.isEnabled()){
-                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
+                        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken
+                                (
+                                        userDetails,
+                                        null,
+                                        userDetails.getAuthorities()
+                                );
 
-                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                        authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                    }
+                }
+            }catch (IllegalArgumentException e){
+                //TODO jwt com identificador da sessao invalido
             }
         }
 
