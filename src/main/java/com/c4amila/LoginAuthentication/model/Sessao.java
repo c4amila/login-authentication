@@ -30,7 +30,7 @@ public class Sessao {
     @Column(name = "expira_em", nullable = false)
     private LocalDateTime expiraEm;
 
-    @Column(name = "revogada_em", nullable = false)
+    @Column(name = "revogada_em", nullable = true)
     private LocalDateTime revogadaEm;
 
     public Boolean estaAtiva(LocalDateTime now){
